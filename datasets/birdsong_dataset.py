@@ -23,7 +23,7 @@ class BirdSongDataset(Dataset):
                                             log_mels=True) 
 
     def __len__(self):
-        return 128*3 # len(self.uttr_labels)
+        return len(self.uttr_labels)
 
     def __getitem__(self, idx):
         idx,label = self.uttr_labels.iloc[idx,:]

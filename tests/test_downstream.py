@@ -1,9 +1,10 @@
 import torch
 import pytest
-
+import numpy as np
 
 from efficientnet.model import DeepCluster_ICASSP
-from birdsong_dataset import BirdSongDataset
+from datasets.birdsong_dataset import BirdSongDataset
+from utils import Metric
 
 # test using :  python -m pytest tests/
 
@@ -29,3 +30,8 @@ def test_birdsong_dataset_batch():
     inputs,targets = next(iter(loader)) 
     assert inputs.shape == (10,1,2206,30)
     assert targets.size(0) == 10
+
+def test_metric():
+    metric = Metric()
+    metric.update([1,1.2])
+    assert metric.avg == 1.1
