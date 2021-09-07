@@ -17,7 +17,9 @@ import torch.utils.data as data
 
 from datasets.birdsong_dataset import BirdSongDataset
 from efficientnet.model import DeepCluster_ICASSP
-from utils import Metric
+from utils import Metric 
+from utils import resume_from_checkpoint
+from utils import save_to_checkpoint
 
 import logging
 logging.basicConfig(filename='train.log', filemode='w')
@@ -37,49 +39,22 @@ def move_to_gpu(*args):
         for item in args:
             item.cuda()
 
-def resume_from_checkpoint(path):
-    logger.info("loading from checkpoint : "+path)
-    checkpoint = torch.load(path)
-    start_epoch = checkpoint['epoch']
-    # remove top_layer parameters from checkpoint
-    for key in checkpoint['state_dict'].copy():
-        if 'top_layer' in key:
-            del checkpoint['state_dict'][key]
-    final_model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
-
-def save_to_checkpoint(epoch,model,opt):
-    torch.save({'epoch': epoch ,
-                'state_dict': final_model.state_dict(),
-                'optimizer' : optimizer.state_dict()},
-                os.path.join('.', 'checkpoint_' + str(epoch) + "_" + '.pth.tar'))
 
 def main():
     set_seed()
     start_epoch=1
-    final_model = DeepCluster_ICASSP(no_of_classes=2)
-
-    # fd = int(final_model.top_layer.weight.size()[1])
-    # final_model.top_layer = None
-    # final_model.model_efficient = torch.nn.DataParallel(final_model.model_efficient)
-    # final_model.features = torch.nn.DataParallel(final_model.features)
-    # final_model.cuda()
-    # cudnn.benchmark = True
-
+    model = DeepCluster_ICASSP(no_of_classes=2)
 
     #----------define optimiser-------------#
     optimizer = torch.optim.SGD(
-        filter(lambda x: x.requires_grad, final_model.parameters()),
+        filter(lambda x: x.requires_grad, model.parameters()),
         lr=0.05,
         momentum=0.9,
         weight_decay=10**-5,
     )
     criterion = nn.CrossEntropyLoss()
 
-    move_to_gpu(final_model,criterion)
-
-
+    move_to_gpu(model,criterion)
 
     train_dataset = BirdSongDataset()
     train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -95,15 +70,15 @@ def main():
     # exit()
     logger.info("Starting To Train")
     for epoch in range(start_epoch,200):
-        loss = train_one_epoch(train_loader, final_model, criterion, optimizer, epoch)
-        # save_to_checkpoint(epoch,final_model,optimiser)
+        loss = train_one_epoch(train_loader, model, criterion, optimizer, epoch)
+        save_to_checkpoint(epoch,model,optimizer)
 
-        # if loss < best_loss:
-        #     torch.save({'epoch': epoch + 1,  # ???????? epoch +1
-        #             'state_dict': final_model.state_dict(),
-        #             'optimizer' : optimizer.state_dict()},
-        #             os.path.join('.', 'best_loss.pth.tar'))
-        #     best_loss = loss
+        if loss < best_loss:
+            torch.save({'epoch': epoch + 1,  # ???????? epoch +1
+                    'state_dict': model.state_dict(),
+                    'optimizer' : optimizer.state_dict()},
+                    os.path.join('.', 'best_loss.pth.tar'))
+            best_loss = loss
 
 
 def train_one_epoch(loader, model, crit, opt, epoch):

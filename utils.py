@@ -25,7 +25,36 @@ from efficientnet_pytorch import EfficientNet
 import torch.utils.data as data
 from torch.utils.data.sampler import Sampler
 
+import logging
+logging.basicConfig(filename='train.log', filemode='w')
+logger = logging.getLogger(__name__)
 
+
+#-----------------------------------------------------------------------------------------------#
+
+def resume_from_checkpoint(path,model,optimizer):
+    logger.info("loading from checkpoint : "+path)
+    checkpoint = torch.load(path)
+    start_epoch = checkpoint['epoch']
+    # remove top_layer parameters from checkpoint
+    for key in checkpoint['state_dict'].copy():
+        if 'top_layer' in key:
+            del checkpoint['state_dict'][key]
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    logger.info("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
+    return start_epoch , model, optimizer
+
+
+def save_to_checkpoint(dataset_name,epoch,model,opt):
+    torch.save({
+            'dataset_name': dataset_name,
+            'epoch': epoch,
+            'state_dict': model.state_dict(),
+            'optimizer' : opt.state_dict()
+            },
+            os.path.join('.', 'checkpoint_' + str(epoch) + "_" + '.pth.tar')
+    )
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
