@@ -37,7 +37,9 @@ from specaugment import specaug
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 AUDIO_SR = 16000
 
-list_of_files_directory = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
+list_of_files_directory = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")[:1000]
+
+tf.config.set_visible_devices([], 'GPU')
 
 def collate_fn_padd_1(batch):
     '''
@@ -114,7 +116,7 @@ class DeepCluster_Reassigned(Dataset):
         wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
         log_mel_spec = extract_log_mel_spectrogram(wave)
         log_mel_spec = torch.tensor(log_mel_spec.numpy().tolist())
-        log_mel_spec = specaug(log_mel_spec)        
+        log_mel_spec = specaug(log_mel_spec.clone().detach().requires_grad_(True))        
         return log_mel_spec,label
 
     def __len__(self):
@@ -166,27 +168,27 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
 
     #Resume from checkpoint
-    #print("loading checkpoint")
-    #checkpoint = torch.load("/speech/srayan/icassp/training/checkpoints_deepcluster/checkpoint_25_.pth.tar")
-    #start_epoch = checkpoint['epoch']
+    print("loading checkpoint")
+    checkpoint = torch.load("/speech/srayan/icassp/training/best_loss.pth.tar")
+    start_epoch = checkpoint['epoch']
     # remove top_layer parameters from checkpoint
-    #for key in checkpoint['state_dict'].copy():
-    #    if 'top_layer' in key:
-    #        del checkpoint['state_dict'][key]
-    #final_model.load_state_dict(checkpoint['state_dict'])
-    #optimizer.load_state_dict(checkpoint['optimizer'])
-    #print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
+    for key in checkpoint['state_dict'].copy():
+        if 'top_layer' in key:
+            del checkpoint['state_dict'][key]
+    final_model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
 
 
 
     pretrain_dataset = DeepCluster("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/",list_of_files_directory)
 
-    train_loader = torch.utils.data.DataLoader(pretrain_dataset, batch_size=128,collate_fn = collate_fn_padd_1,pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(pretrain_dataset, batch_size=16,collate_fn = collate_fn_padd_1,pin_memory=True,num_workers = 2)
 
     best_loss = float("inf")
 
-    for epoch in range(0,200):
-    #for epoch in range(start_epoch,200): #when using checkpoint
+    #for epoch in range(0,200):
+    for epoch in range(start_epoch,200): #when using checkpoint
 
         final_model.top_layer = None
 
@@ -201,7 +203,6 @@ def main():
 
         print("Done Clustering")
 
-
         mlp = list(final_model.classifier.children())
         mlp.append(nn.ReLU(inplace=True).cuda())
         final_model.classifier = nn.Sequential(*mlp)
@@ -209,7 +210,6 @@ def main():
         final_model.top_layer.weight.data.normal_(0, 0.01)
         final_model.top_layer.bias.data.zero_()
         final_model.top_layer.cuda()
-
 
 
         print("Starting To make Reassigned Dataset")
@@ -229,7 +229,7 @@ def main():
 
         sampler = UnifLabelSampler(int(len(list_of_files_directory)),deepcluster.images_lists)
 
-        train_loader_reassigned = torch.utils.data.DataLoader(dataset_w_labels,batch_size=64,collate_fn = collate_fn_padd_2,sampler=sampler,pin_memory=True)
+        train_loader_reassigned = torch.utils.data.DataLoader(dataset_w_labels,batch_size=64,collate_fn = collate_fn_padd_2,sampler=sampler,pin_memory=True,num_workers = 2)
 
         print("Starting To Train")
 
