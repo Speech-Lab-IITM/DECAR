@@ -62,7 +62,7 @@ def extract_log_mel_spectrogram(waveform,
   return log_mel_spectrograms
 
 
-def compute_features(dataloader, model, N): #N is total dataset size
+def compute_features_back(dataloader, model, N): #N is total dataset size
     batch = 128
     verbose = True
     if verbose:
@@ -91,8 +91,44 @@ def compute_features(dataloader, model, N): #N is total dataset size
 
         #print("One Batch Done")
 
-        if verbose and (i % 200) == 0:
+        if verbose and (i % 50) == 0:
             print('{0} / {1}\t'
+                  'Time: {batch_time.val:.3f} ({batch_time.avg:.3f})'
+                  .format(i, len(dataloader), batch_time=batch_time))
+    return features
+
+def compute_features(dataloader, model, N): #N is total dataset size
+    batch = 16
+    verbose = True
+    if verbose:
+        print('Compute features')
+    batch_time = AverageMeter()
+    end = time.time()
+    model.eval()
+    # discard the label information in the dataloader
+    for i, (input_tensor) in enumerate(dataloader):
+        with torch.no_grad():
+            input_var = torch.autograd.Variable(input_tensor.cuda())
+            aux = model(input_var).data.cpu().numpy()
+
+            if i == 0:
+                features = np.zeros((N, aux.shape[1]), dtype='float32')
+
+            aux = aux.astype('float32')
+            if i < len(dataloader) - 1:
+                features[i * batch: (i + 1) * batch] = aux
+            else:
+                # special treatment for final batch
+                features[i * batch:] = aux
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            #print("One Batch Done")
+
+            if verbose and (i % 50) == 0:
+                print('{0} / {1}\t'
                   'Time: {batch_time.val:.3f} ({batch_time.avg:.3f})'
                   .format(i, len(dataloader), batch_time=batch_time))
     return features
