@@ -17,6 +17,7 @@ class BirdSongDataset(Dataset):
         self.uttr_dir = uttr_dir
         self.transform = transform
         self.sample_rate = sample_rate
+        self.no_of_classes=2
 
     def __len__(self):
         return len(self.uttr_labels)

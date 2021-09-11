@@ -1,5 +1,7 @@
 import torch
 import torchaudio
+# from datasets.birdsong_dataset import BirdSongDataset
+# from datasets.tf_speech import TfSpeech
 
 class DataUtils():
     
@@ -10,7 +12,7 @@ class DataUtils():
 
     @classmethod
     def read_mfcc(cls,filename):
-        print(filename)
+        # print(filename)
         waveform, sample_rate = torchaudio.load(filename)   
         return torch.transpose(cls.extract_mffc(waveform),-2,-1) # change shape -> C,T,nfeats
 
@@ -27,6 +29,6 @@ class DataUtils():
         batch_y = [y for t,y in batch]
         batch_x = torch.nn.utils.rnn.pad_sequence(batch_x,batch_first = True)
         batch_x = batch_x.unsqueeze(1)
-        batch_y = None#torch.Tensor(batch_y).type(torch.LongTensor)
-
+        batch_y = torch.Tensor(batch_y).type(torch.LongTensor)
+        # print("batch y",batch_y)
         return batch_x,batch_y
