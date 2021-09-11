@@ -29,6 +29,31 @@ import logging
 logging.basicConfig(filename='train.log', filemode='w')
 logger = logging.getLogger(__name__)
 
+#----------------------------------------------------------------------------------------------#
+import argparse
+
+from datasets.birdsong_dataset import BirdSongDataset
+from datasets.tf_speech import TfSpeech
+
+def get_data_set(name):
+    if name == "tf_speech" :
+        return TfSpeech()
+    elif name == "bird_song":
+        return BirdSongDataset()    
+    else :
+        raise NotImplementedError
+
+def get_downstream_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--down_stream_task', default="tf_speech", type=str,
+                        help='down_stream task name')
+    parser.add_argument('--batch_size', default=32, type=int,
+                        help='batch size ')
+    parser.add_argument('--epochs', default=10, type=int, metavar='N',
+                        help='number of total epochs to run')
+    parser.add_argument('--no_of_classes', default=2, type=int, metavar='N',
+                        help='number of classes')
+    return parser
 
 #-----------------------------------------------------------------------------------------------#
 
@@ -46,9 +71,9 @@ def resume_from_checkpoint(path,model,optimizer):
     return start_epoch , model, optimizer
 
 
-def save_to_checkpoint(dataset_name,epoch,model,opt):
+def save_to_checkpoint(down_stream_task,epoch,model,opt):
     torch.save({
-            'dataset_name': dataset_name,
+            'down_stream_task': down_stream_task,
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer' : opt.state_dict()
