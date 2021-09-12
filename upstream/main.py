@@ -37,7 +37,7 @@ from specaugment import specaug
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 AUDIO_SR = 16000
 
-list_of_files_directory = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")[:1000]
+list_of_files_directory = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
 
 tf.config.set_visible_devices([], 'GPU')
 
