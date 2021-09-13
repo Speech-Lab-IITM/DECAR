@@ -4,9 +4,18 @@ import tensorflow as tf
 import librosa
 from tqdm import tqdm
 from multiprocessing import Pool
+import argparse
+from functools import partial
+tf.config.set_visible_devices([], 'GPU')
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--root_dir', type=str,
+                        help='down_stream task name')
+    parser.add_argument('--no_workers', default=10, type=int, metavar='N',
+                        help='number of total epochs to run')
+    return parser
 
-root_dir = "/speech/sandesh/icassp/deep_cluster/birdsong/wav"
 
 def create_dir(directory):
     if not os.path.exists(directory):
@@ -44,25 +53,28 @@ def extract_log_mel_spectrogram(audio_path,
             clip_value_max=1e8)
 
         log_mel_spectrograms = tf.math.log(mel_spectrograms)
-        
+
         return log_mel_spectrograms.numpy()
 
 
-def write_feats(files_array):
+def write_feats(root_dir,files_array):
     for file in tqdm(files_array):
-        feat = extract_log_mel_spectrogram(os.path.join(dir,file))
-        np.save(os.path.join('/speech/sandesh/icassp/deep_cluster/birdsong/wav','spec',file),feat)
-        break
-  
-def run_parallel():
-    create_dir(os.path.join(root_dir,'spec'))
-    
-    list_files = np.array(os.listdir(dir))
-    list_ranges = np.array_split(list_files, 10)
-  
+        if file.endswith("wav"):
+            feat = extract_log_mel_spectrogram(os.path.join(root_dir,'wav',file))
+            np.save(os.path.join(root_dir,'spec',file),feat)
+
+def run_parallel(args):
+    create_dir(os.path.join(args.root_dir,'spec'))
+
+    list_files = np.array(os.listdir(os.path.join(args.root_dir,'wav')))
+    list_ranges = np.array_split(list_files, args.no_workers)
+    pfunc=partial(write_feats,args.root_dir)
     pool = Pool(processes=len(list_ranges))
-    pool.map(write_feats, list_ranges)
-  
+    pool.map(pfunc, list_ranges)
+
 # Driver code
 if __name__ == '__main__':
-    run_parallel()
+    parser = get_parser()
+    args = parser.parse_args()
+    print(args)
+    run_parallel(args) 
