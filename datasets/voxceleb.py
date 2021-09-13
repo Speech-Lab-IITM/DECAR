@@ -7,27 +7,28 @@ import os
 
 from datasets.data_utils import DataUtils
 
-class BirdSongDataset(Dataset):
-    def __init__(self, 
-                    type, 
+
+
+class Voxceleb1Dataset(Dataset):
+    def __init__(self,  
+                    type,
                     transform=None,
                     target_transform=None,
-                    sample_rate=16000):
-        
-        self.feat_root =  DataUtils.root_dir["Birdsong"]
-        if type == "freefield1010":
-            annotations_file=os.path.join(self.feat_root,"freefield1010_data.csv")
-        elif type == "Warblr":
-            annotations_file=os.path.join(self.feat_root,"Warblr_data.csv")
-        elif type == "combined":
-            annotations_file=os.path.join(self.feat_root,"combined_data.csv")
-        else :
-            raise NotImplementedError    
+                    sample_rate=16000):        
+        self.feat_root =  DataUtils.root_dir["voxceleb_v1"]
+        if(type=="train"):
+            annotations_file = os.path.join(self.feat_root,'train_data.csv')
+        elif(type=="valid"):
+            annotations_file = os.path.join(self.feat_root,'valid_data.csv')
+        elif(type=="test"):
+            annotations_file = os.path.join(self.feat_root,'test_data.csv')    
+        else:
+            raise NotImplementedError
+
         self.uttr_labels= pd.read_csv(annotations_file)
-        
         self.transform = transform
         self.sample_rate = sample_rate
-        self.no_of_classes=2
+        self.no_of_classes= 1251
 
     def __len__(self):
         return len(self.uttr_labels)

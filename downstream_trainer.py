@@ -3,7 +3,7 @@ import os
 import pickle
 import time
 import numpy as np
-from utils import AverageMeter,UnifLabelSampler, get_downstream_parser 
+from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser , load_pretrain
 
 from os.path import join as path_join
 import json
@@ -15,39 +15,40 @@ from torch import nn
 
 import torch.utils.data as data
 from tqdm import tqdm
-
-from datasets.birdsong_dataset import BirdSongDataset
-from datasets.tf_speech import TfSpeech
+import matplotlib.pyplot as plt
+from datasets.dataset import get_dataset
 from datasets.data_utils import DataUtils
-from efficientnet.model import DeepCluster_ICASSP
+from efficientnet.model import DeepCluster_downstream
 from utils import Metric 
 from utils import resume_from_checkpoint
 from utils import save_to_checkpoint
-
+import random
 import logging
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
-def get_logger(file_name):
+def get_logger(args):
+    create_dir(args.exp_root)
+    create_dir(os.path.join(args.exp_root,'models'))
     logger = logging.getLogger(__name__)
-    f_handler = logging.FileHandler(os.path.join("/speech/sandesh/icassp/deep_cluster",
-                                            "logs",file_name+'train.log'))
-    f_handler.setLevel(logging.DEBUG)
+    f_handler = logging.FileHandler(os.path.join(args.exp_root,'train.log'))
+    f_handler.setLevel(logging.INFO)
     # f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # f_handler.setFormatter(f_format)
     logger.addHandler(f_handler)
     logger.setLevel(logging.DEBUG)
     return logger
 
-
-def get_dataset(downstream_task_name):
-    if downstream_task_name == "bird_song":
-        return BirdSongDataset()
-    elif downstream_task_name == "tf_speech":
-        return TfSpeech()
-    else:
-        raise NotImplementedError
-
+def log_args(args):
+    logger = logging.getLogger(__name__)
+    logger.info("Downstream Task {}".format(args.down_stream_task))
+    logger.info("Resume {}, load only efficient net {}, from path {} ".format(args.resume,
+                args.load_only_efficientNet,args.pretrain_path))
+    logger.info("BS {}".format(args.batch_size))  
+    logger.info("complete args %r",args)         
 
 def set_seed(seed = 31):
+    random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
     if torch.cuda.is_available():
@@ -61,71 +62,78 @@ def move_to_gpu(*args):
 
 def train(args):    
     start_epoch=1
-    logger = get_logger(args.down_stream_task)
-    # logger.info("Starting To Train")
-    # exit()
-    dataset = get_dataset(args.down_stream_task)
+    args.exp_root = os.path.join('.','exp',args.down_stream_task,args.final_pooling_type,args.tag)
+    logger = get_logger(args)
+    log_args(args)
+    train_dataset,valid_dataset = get_dataset(args.down_stream_task)
 
     # -----------model criterion optimizer ---------------- #
-    model = DeepCluster_ICASSP(no_of_classes=dataset.no_of_classes)
+    model = DeepCluster_downstream(no_of_classes=train_dataset.no_of_classes,final_pooling_type=args.final_pooling_type)
+    model.model_efficient = torch.nn.DataParallel(model.model_efficient)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(
+    optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),
-        lr=0.05,
-        momentum=0.9,
-        weight_decay=10**-5,
+        lr=0.001,# momentum=0.9,weight_decay=10**-5,
     )
+    logger.info(str(model))
+    if args.resume:
+        resume_from_checkpoint(args.pretrain_path,model,optimizer)
+    elif args.pretrain_path:
+        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
+    else:
+        logger.info("Random Weights init")
+        pass
 
     move_to_gpu(model,criterion)
 
-    
-    train_size = int(0.8 * len(dataset))
-    test_size = len(dataset) - train_size
-    train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                 batch_size=args.batch_size,
-                                                collate_fn = DataUtils.collate_fn_padd,
+                                                shuffle=True,
+                                                collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)
     valid_loader = torch.utils.data.DataLoader(valid_dataset,
                                                 batch_size=args.batch_size,
-                                                collate_fn = DataUtils.collate_fn_padd,
+                                                collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)                                            
 
-    best_loss = float("inf")
-
-    train_stats = eval(train_loader, model, criterion)
-    logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
-            -1 , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
-                0,0
-        ) )
+    # train_stats = eval(train_loader, model, criterion)
+    # eval_stats = eval(valid_loader,model,criterion)
+    # logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
+    #         -1 , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
+    #             eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
+    #     ) )
     logger.info("Starting To Train")
-    for epoch in range(start_epoch,args.epochs):
-        train_stats = train_one_epoch(train_loader, model, criterion, optimizer, epoch,logger)
+    train_accuracy = []
+    train_losses=[]
+    valid_accuracy = []
+    valid_losses=[]
+    for epoch in range(start_epoch,args.epochs+1):
+        train_stats = train_one_epoch(train_loader, model, criterion, optimizer, epoch)
         train_loss = train_stats["loss"]
-        save_to_checkpoint(args.down_stream_task,
+        save_to_checkpoint(args.down_stream_task,args.exp_root,
                             epoch,model,optimizer)
         eval_stats = eval(valid_loader,model,criterion)
+        train_losses.append(train_stats["loss"].avg.numpy())
+        train_accuracy.append(train_stats["accuracy"].avg)
+        valid_losses.append(eval_stats["loss"].avg.numpy())
+        valid_accuracy.append(eval_stats["accuracy"].avg)
 
         logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
             epoch , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
                 eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
         ) )
-        print("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
-            epoch , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
-                eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
-        ) )
-        # logger.info("Train loss: "+str(eval_metrics["loss"].avg.numpy()))
-        # logger.info("Train accuracy: "+str(eval_metrics["accuracy"].avg))
+    logger.info("max train accuracy : {}".format(max(train_accuracy)))
+    logger.info("max valid accuracy : {}".format(max(valid_accuracy)))
+    plt.plot(range(1,len(train_accuracy)+1), train_accuracy, label = "train accuracy",marker = 'x')
+    plt.plot(range(1,len(valid_accuracy)+1), valid_accuracy, label = "valid accuracy",marker = 'x')
+    plt.legend()
+    plt.savefig(os.path.join(args.exp_root,'accuracy.png'))
 
-        # if train_loss < best_loss:
-        #     # TODO :: point best to best epoch model 
-        #     best_loss = train_loss
-
-
-def train_one_epoch(loader, model, crit, opt, epoch,logger):
+def train_one_epoch(loader, model, crit, opt, epoch):
     '''
     Train one Epoch
     '''
+    logger = logging.getLogger(__name__)
     logger.debug("epoch:"+str(epoch) +" Started")
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -211,6 +219,7 @@ def main():
     set_seed()
     parser = get_downstream_parser()
     args = parser.parse_args()
+    print(args)
     train(args)
 
 if __name__== "__main__":
