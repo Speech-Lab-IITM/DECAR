@@ -38,8 +38,9 @@ class TfSpeech(Dataset):
 
     def __getitem__(self, idx):
         audio_path,label = self.uttr_df.iloc[idx,:]
-        uttr_mfcc = DataUtils.read_mfcc(audio_path)
-        return uttr_mfcc, self.get_label_id(label)
+        #uttr_mfcc = DataUtils.read_mfcc(audio_path)
+        uttr_melspec = DataUtils.extract_log_mel_spectrogram(audio_path)
+        return uttr_melspec, self.get_label_id(label)
 
 
 class TfSpeechTest(Dataset):
@@ -58,8 +59,9 @@ class TfSpeechTest(Dataset):
 
     def __getitem__(self, idx):
         audio_path,file_name = self.uttr_df.iloc[idx,:]
-        uttr_mfcc = DataUtils.read_mfcc(audio_path)
-        return uttr_mfcc, file_name 
+        #uttr_mfcc = DataUtils.read_mfcc(audio_path)
+        uttr_melspec = DataUtils.extract_log_mel_spectrogram(audio_path)
+        return uttr_melspec, file_name 
 
     def get_label(self,idx):
         try:

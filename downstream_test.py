@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+from sys import path
 import time
 import numpy as np
 from utils import AverageMeter,UnifLabelSampler, get_downstream_parser 
@@ -22,7 +23,8 @@ import pandas as pd
 import logging
 
 def get_logger(file_name):
-    logging.basicConfig(filename=file_name+'train.log', filemode='w')
+    file_name= os.path.join('.',file_name+'train.log')
+    logging.basicConfig(filename=file_name, filemode='w')
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     return logger
@@ -56,7 +58,9 @@ def move_to_gpu(*args):
             item.cuda()
 
 
-def test(args):    
+
+def test(args):
+    root_dir = os.path.join("exp",args.down_stream_task)    
     logger = get_logger(args.down_stream_task)
     dataset = get_dataset(args.down_stream_task,mode="test")
     df_pred = pd.DataFrame(columns = [ 'fname','label'])

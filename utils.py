@@ -45,14 +45,12 @@ def get_data_set(name):
 
 def get_downstream_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--down_stream_task', default="tf_speech", type=str,
+    parser.add_argument('--down_stream_task', default="birdsong", type=str,
                         help='down_stream task name')
     parser.add_argument('--batch_size', default=32, type=int,
                         help='batch size ')
-    parser.add_argument('--epochs', default=10, type=int, metavar='N',
+    parser.add_argument('--epochs', default=20, type=int, metavar='N',
                         help='number of total epochs to run')
-    parser.add_argument('--no_of_classes', default=2, type=int, metavar='N',
-                        help='number of classes')
     return parser
 
 #-----------------------------------------------------------------------------------------------#
@@ -61,12 +59,12 @@ def resume_from_checkpoint(path,model,optimizer):
     logger.info("loading from checkpoint : "+path)
     checkpoint = torch.load(path)
     start_epoch = checkpoint['epoch']
-    # remove top_layer parameters from checkpoint
+    # retain only efficient net weights
     for key in checkpoint['state_dict'].copy():
-        if 'top_layer' in key:
-            del checkpoint['state_dict'][key]
-    model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
+        if not key.startswith('model_efficient'):
+            del checkpoint['state_dict'][key]        
+    model.load_state_dict(checkpoint['state_dict'],strict=False)
+    #optimizer.load_state_dict(checkpoint['optimizer'])
     logger.info("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
     return start_epoch , model, optimizer
 
@@ -78,7 +76,7 @@ def save_to_checkpoint(down_stream_task,epoch,model,opt):
             'state_dict': model.state_dict(),
             'optimizer' : opt.state_dict()
             },
-            os.path.join('.', 'checkpoint_' + str(epoch) + "_" + '.pth.tar')
+            os.path.join('.','exp',down_stream_task, 'checkpoint_' + str(epoch) + "_" + '.pth.tar')
     )
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------#
