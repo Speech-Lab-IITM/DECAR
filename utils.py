@@ -32,24 +32,20 @@ logger = logging.getLogger(__name__)
 #----------------------------------------------------------------------------------------------#
 import argparse
 
-from datasets.birdsong_dataset import BirdSongDataset
-from datasets.tf_speech import TfSpeech
-
-def get_data_set(name):
-    if name == "tf_speech" :
-        return TfSpeech()
-    elif name == "bird_song":
-        return BirdSongDataset()    
-    else :
-        raise NotImplementedError
 
 def get_downstream_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--down_stream_task', default="birdsong", type=str,
-                        help='down_stream task name')
-    parser.add_argument('--batch_size', default=32, type=int,
+    parser.add_argument('--down_stream_task', default="libri_100", type=str,
+                        help='''down_stream task name one of 
+                        birdsong_freefield1010 , birdsong_warblr ,
+                        speech_commands_v1 , speech_commands_v2
+                        libri_100 , musical_instruments , iemocap , tut_urban , voxceleb1 , musan
+                        ''')
+    parser.add_argument('--batch_size', default=16, type=int,
                         help='batch size ')
-    parser.add_argument('--epochs', default=20, type=int, metavar='N',
+    parser.add_argument('--epochs', default=30, type=int, metavar='N',
+                        help='number of total epochs to run')
+    parser.add_argument('--resume', default=None, type=str,
                         help='number of total epochs to run')
     return parser
 
