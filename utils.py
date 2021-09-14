@@ -32,35 +32,54 @@ logger = logging.getLogger(__name__)
 #----------------------------------------------------------------------------------------------#
 import argparse
 
+def create_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 
 def get_downstream_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--down_stream_task', default="libri_100", type=str,
+    parser.add_argument('--down_stream_task', default="birdsong_freefield1010", type=str,
                         help='''down_stream task name one of 
                         birdsong_freefield1010 , birdsong_warblr ,
                         speech_commands_v1 , speech_commands_v2
                         libri_100 , musical_instruments , iemocap , tut_urban , voxceleb1 , musan
                         ''')
-    parser.add_argument('--batch_size', default=16, type=int,
+    parser.add_argument('--batch_size', default=32, type=int,
                         help='batch size ')
     parser.add_argument('--epochs', default=30, type=int, metavar='N',
                         help='number of total epochs to run')
-    parser.add_argument('--resume', default=None, type=str,
+    parser.add_argument('--resume', default = False, type=bool,
                         help='number of total epochs to run')
+    parser.add_argument('--pretrain_path', default=None, type=str,
+                        help='Path to Pretrain weights') 
+    parser.add_argument('--freeze_effnet', default=None, type=bool,
+                        help='Path to Pretrain weights')                                        
+    parser.add_argument('--load_only_efficientNet',default = False,type =bool)  
+    parser.add_argument('--tag',type =str)                    
     return parser
 
 #-----------------------------------------------------------------------------------------------#
 
+def load_pretrain(path,model,
+                load_only_effnet=False,freeze_effnet=False):
+    checkpoint = torch.load(path)
+    if load_only_effnet :
+        for key in checkpoint['state_dict'].copy():
+            if not key.startswith('model_efficient'):
+                del checkpoint['state_dict'][key]
+    if freeze_effnet : 
+        for param in model.model_efficient.parameters():
+            param.requires_grad = False
+
+    return model
+
 def resume_from_checkpoint(path,model,optimizer):
     logger.info("loading from checkpoint : "+path)
     checkpoint = torch.load(path)
-    start_epoch = checkpoint['epoch']
-    # retain only efficient net weights
-    for key in checkpoint['state_dict'].copy():
-        if not key.startswith('model_efficient'):
-            del checkpoint['state_dict'][key]        
-    model.load_state_dict(checkpoint['state_dict'],strict=False)
-    #optimizer.load_state_dict(checkpoint['optimizer'])
+    start_epoch = checkpoint['epoch']    
+    model.load_state_dict(checkpoint['state_dict'],strict=False)    
+    optimizer.load_state_dict(checkpoint['optimizer'])
     logger.info("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
     return start_epoch , model, optimizer
 
