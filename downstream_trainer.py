@@ -2,9 +2,8 @@ import argparse
 import os
 import pickle
 import time
-from efficientnet_pytorch.utils import load_pretrained_weights
 import numpy as np
-from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser 
+from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser , load_pretrain
 
 from os.path import join as path_join
 import json
@@ -19,7 +18,7 @@ from tqdm import tqdm
 
 from datasets.dataset import get_dataset
 from datasets.data_utils import DataUtils
-from efficientnet.model import DeepCluster_ICASSP
+from efficientnet.model import DeepCluster_downstream
 from utils import Metric 
 from utils import resume_from_checkpoint
 from utils import save_to_checkpoint
@@ -42,7 +41,8 @@ def log_args(args):
     logger.info("Downstream Task {}".format(args.down_stream_task))
     logger.info("Resume {}, load only efficient net {}, from path {} ".format(args.resume,
                 args.load_only_efficientNet,args.pretrain_path))
-    logger.info("BS {}".format(args.batch_size))           
+    logger.info("BS {}".format(args.batch_size))  
+    logger.info("complete args %r",args)         
 
 def set_seed(seed = 31):
     torch.manual_seed(seed)
@@ -64,19 +64,20 @@ def train(args):
     train_dataset,valid_dataset = get_dataset(args.down_stream_task)
 
     # -----------model criterion optimizer ---------------- #
-    model = DeepCluster_ICASSP(no_of_classes=2)
+    model = DeepCluster_downstream(no_of_classes=train_dataset.no_of_classes)
+    model.model_efficient = torch.nn.DataParallel(model.model_efficient)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),
         lr=0.001,# momentum=0.9,weight_decay=10**-5,
     )
-
+    logger.info(str(model))
     if args.resume:
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
-        load_pretrained_weights(args.pretrain_path,model,
-                                args.load_only_efficientNet,args.freeze_effnet)
+        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
     else:
+        logger.info("Random Weights init")
         pass
 
     move_to_gpu(model,criterion)
