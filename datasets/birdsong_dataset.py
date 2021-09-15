@@ -13,16 +13,18 @@ class BirdSongDataset(Dataset):
                     transform=None,
                     target_transform=None,
                     sample_rate=16000):
+        
+        self.feat_root =  DataUtils.root_dir["Birdsong"]
         if type == "freefield1010":
-            annotations_file="/speech/Databases/Birdsong/BirdSong/freefield1010_data.csv"
+            annotations_file=os.path.join(self.feat_root,"freefield1010_data.csv")
         elif type == "Warblr":
-            annotations_file="/speech/Databases/Birdsong/BirdSong/Warblr_data.csv"
+            annotations_file=os.path.join(self.feat_root,"Warblr_data.csv")
         elif type == "combined":
-            annotations_file="/speech/Databases/Birdsong/BirdSong/Warblr_data.csv"
+            annotations_file=os.path.join(self.feat_root,"combined_data.csv")
         else :
             raise NotImplementedError    
         self.uttr_labels= pd.read_csv(annotations_file)
-        self.feat_root = "/speech/Databases/Birdsong/BirdSong/"
+        
         self.transform = transform
         self.sample_rate = sample_rate
         self.no_of_classes=2
