@@ -11,7 +11,7 @@ from datasets.data_utils import DataUtils
 # train total : 064722
 # test  total : 158539
 
-class TfSpeech(Dataset):
+class SpeechCommandsV1(Dataset):
     def __init__(self, annotations_file="/speech/sandesh/icassp/tf_speech/train/labels.csv",
                     transform=None,
                     target_transform=None,
@@ -43,7 +43,7 @@ class TfSpeech(Dataset):
         return uttr_melspec, self.get_label_id(label)
 
 
-class TfSpeechTest(Dataset):
+class SpeechCommandsV1Test(Dataset):
     def __init__(self,annotations_file="/speech/sandesh/icassp/tf_speech/test/labels.csv",
                     transform=None,
                     target_transform=None,

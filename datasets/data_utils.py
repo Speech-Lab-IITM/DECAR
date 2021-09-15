@@ -4,6 +4,15 @@ import librosa
 import tensorflow as tf
 import numpy as np
 class DataUtils():
+
+    @classmethod
+    def map_labels(cls,label_array):
+        uarray = np.unique(label_array)
+        label_dict = dict()
+        for i,label in enumerate(uarray):
+            label_dict[label] = i
+        return label_dict
+
     @classmethod
     def extract_log_mel_spectrogram(cls,audio_path,
                                 sample_rate=16000,

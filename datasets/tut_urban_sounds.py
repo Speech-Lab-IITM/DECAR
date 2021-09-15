@@ -7,24 +7,21 @@ import os
 
 from datasets.data_utils import DataUtils
 
-# ----Stats----
-# speakers 585   
-# test samples  :: 05708 
-# train samples :: 22830 
-# ---------------
-
-class Libri100(Dataset):
-    def __init__(self, type="train", 
-                    audio_root = "/speech/Databases/Birdsong/Libri100SpkId/spec",
+class TutUrbanSounds(Dataset):
+    '''
+    audio_root: /speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development/audio
+    '''
+    def __init__(self, type="train" , 
+                    audio_root = "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development/audio",
                     transform=None,
                     target_transform=None,
                     sample_rate=16000):
-        if type == "train":
-            annotations_file="/speech/Databases/Birdsong/Libri100SpkId/train_data.csv"
-        elif type == "valid":
-            annotations_file="/speech/Databases/Birdsong/Libri100SpkId/test_data.csv"    
+        if(type == "train"):
+            annotations_file = "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development/evaluation_setup/train_data.csv"
+        elif(type=="valid"):
+            annotations_file = "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development/evaluation_setup/valid_data.csv"
         else:
-            raise NotImplementedError
+            raise NotImplementedError    
         self.uttr_labels= pd.read_csv(annotations_file)
         self.audio_root = audio_root
         self.transform = transform

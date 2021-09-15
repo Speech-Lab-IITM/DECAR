@@ -3,7 +3,7 @@ import os
 import pickle
 import time
 import numpy as np
-from utils import AverageMeter,UnifLabelSampler, get_downstream_parser 
+from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser , load_pretrain
 
 from os.path import join as path_join
 import json
@@ -18,17 +18,17 @@ from tqdm import tqdm
 
 from datasets.dataset import get_dataset
 from datasets.data_utils import DataUtils
-from efficientnet.model import DeepCluster_ICASSP
+from efficientnet.model import DeepCluster_downstream
 from utils import Metric 
 from utils import resume_from_checkpoint
 from utils import save_to_checkpoint
 
 import logging
 
-def get_logger(file_name):
+def get_logger(args):
+    create_dir(args.exp_root)
     logger = logging.getLogger(__name__)
-    f_handler = logging.FileHandler(
-        os.path.join('.','exp',file_name,'train.log'))
+    f_handler = logging.FileHandler(os.path.join(args.exp_root,'train.log'))
     f_handler.setLevel(logging.INFO)
     # f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # f_handler.setFormatter(f_format)
@@ -36,7 +36,13 @@ def get_logger(file_name):
     logger.setLevel(logging.DEBUG)
     return logger
 
-
+def log_args(args):
+    logger = logging.getLogger(__name__)
+    logger.info("Downstream Task {}".format(args.down_stream_task))
+    logger.info("Resume {}, load only efficient net {}, from path {} ".format(args.resume,
+                args.load_only_efficientNet,args.pretrain_path))
+    logger.info("BS {}".format(args.batch_size))  
+    logger.info("complete args %r",args)         
 
 def set_seed(seed = 31):
     torch.manual_seed(seed)
@@ -52,29 +58,30 @@ def move_to_gpu(*args):
 
 def train(args):    
     start_epoch=1
-    logger = get_logger(args.down_stream_task)
-    # logger.info("Starting To Train")
-    # exit()
-    dataset = get_dataset(args.down_stream_task)
+    args.exp_root = os.path.join('.','exp',args.down_stream_task,args.tag)
+    logger = get_logger(args)
+    log_args(args)
+    train_dataset,valid_dataset = get_dataset(args.down_stream_task)
 
     # -----------model criterion optimizer ---------------- #
-    model = DeepCluster_ICASSP(no_of_classes=dataset.no_of_classes)
-    resume_from_checkpoint("/speech/ashish/sreyan_extra/backup/best_loss.pth.tar",model,None)
-
+    model = DeepCluster_downstream(no_of_classes=train_dataset.no_of_classes)
+    model.model_efficient = torch.nn.DataParallel(model.model_efficient)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(
+    optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),
-        lr=0.05,
-        momentum=0.9,
-        weight_decay=10**-5,
+        lr=0.001,# momentum=0.9,weight_decay=10**-5,
     )
+    logger.info(str(model))
+    if args.resume:
+        resume_from_checkpoint(args.pretrain_path,model,optimizer)
+    elif args.pretrain_path:
+        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
+    else:
+        logger.info("Random Weights init")
+        pass
 
     move_to_gpu(model,criterion)
 
-    
-    train_size = int(0.8 * len(dataset))
-    test_size = len(dataset) - train_size
-    train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                 batch_size=args.batch_size,
                                                 collate_fn = DataUtils.collate_fn_padd_2,
@@ -84,15 +91,13 @@ def train(args):
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)                                            
 
-    best_loss = float("inf")
-
     train_stats = eval(train_loader, model, criterion)
     logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
             -1 , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
                 0,0
         ) )
     logger.info("Starting To Train")
-    for epoch in range(start_epoch,args.epochs):
+    for epoch in range(start_epoch,args.epochs+1):
         train_stats = train_one_epoch(train_loader, model, criterion, optimizer, epoch)
         train_loss = train_stats["loss"]
         save_to_checkpoint(args.down_stream_task,
@@ -194,6 +199,7 @@ def main():
     set_seed()
     parser = get_downstream_parser()
     args = parser.parse_args()
+    print(args)
     train(args)
 
 if __name__== "__main__":
