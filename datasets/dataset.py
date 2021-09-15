@@ -1,5 +1,8 @@
 from datasets.birdsong_dataset import BirdSongDataset
 from datasets.libri100 import Libri100
+from datasets.tut_urban_sounds import TutUrbanSounds
+from datasets.musical_instruments import MusicalInstrumentsDataset
+from datasets.iemocap import IEMOCAPDataset 
 import torch
 
 def get_dataset(downstream_task_name):
@@ -16,11 +19,11 @@ def get_dataset(downstream_task_name):
     elif downstream_task_name == "libri_100":
         return Libri100(type="train") , Libri100(type="valid") 
     elif downstream_task_name == "musical_instruments":
-        raise NotImplementedError
+        return MusicalInstrumentsDataset(type="train") , MusicalInstrumentsDataset(type="valid")
     elif downstream_task_name == "iemocap":
-        raise NotImplementedError    
+        raise split_dataset(IEMOCAPDataset())    
     elif downstream_task_name == "tut_urban":
-        raise NotImplementedError 
+        return TutUrbanSounds(type="train"),TutUrbanSounds(type="valid")
     elif downstream_task_name == "voxceleb1":
         raise NotImplementedError    
     elif downstream_task_name == "musan":

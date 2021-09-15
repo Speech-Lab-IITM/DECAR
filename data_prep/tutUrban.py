@@ -14,7 +14,7 @@ train_csv = pd.read_csv(os.path.join(root_dir,"evaluation_setup/fold1_train.txt"
                         sep="\t", header=None)
 train_csv.columns =  ['audio', 'Label']
 
-train_csv['Path'] = train_csv.apply(lambda row: os.path.join('spec',str(row.audio).split('/')[-1]+'.wav.npy'), 
+train_csv['Path'] = train_csv.apply(lambda row: os.path.join('spec',str(row.audio).split('/')[-1]+'.npy'), 
                                                     axis = 1)
 train_csv = train_csv.drop(['audio'], axis=1)
 train_csv = train_csv.reindex(columns=['Path','Label'])
@@ -24,7 +24,7 @@ valid_csv = pd.read_csv(os.path.join(root_dir,"evaluation_setup/fold1_evaluate.t
                         sep="\t", header=None)
 valid_csv.columns =  ['audio', 'Label']
 
-valid_csv['Path'] = valid_csv.apply(lambda row: os.path.join('spec',str(row.audio).split('/')[-1]+'.wav.npy'), 
+valid_csv['Path'] = valid_csv.apply(lambda row: os.path.join('spec',str(row.audio).split('/')[-1]+'.npy'), 
                                                     axis = 1)
 valid_csv = valid_csv.drop(['audio'], axis=1)
 valid_csv = valid_csv.reindex(columns=['Path','Label'])

@@ -5,6 +5,13 @@ import tensorflow as tf
 import numpy as np
 class DataUtils():
 
+    root_dir ={
+        "Birdsong" : "/speech/Databases/Birdsong/BirdSong",
+        "IEMOCAP" : "/speech/Databases/Birdsong/IEMOCAP",
+        "MusicalInstruments" : "/speech/Databases/Birdsong/MusicalInstruments",
+        "tut_urban" : "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development"
+    }
+
     @classmethod
     def map_labels(cls,label_array):
         uarray = np.unique(label_array)
