@@ -9,7 +9,8 @@ class DataUtils():
         "Birdsong" : "/speech/Databases/Birdsong/BirdSong",
         "IEMOCAP" : "/speech/Databases/Birdsong/IEMOCAP",
         "MusicalInstruments" : "/speech/Databases/Birdsong/MusicalInstruments",
-        "tut_urban" : "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development"
+        "tut_urban" : "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development",
+        "voxceleb_v1" : "/speech/Databases/Birdsong/Voxceleb1/dev"
     }
 
     @classmethod

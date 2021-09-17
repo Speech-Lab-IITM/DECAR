@@ -1,3 +1,4 @@
+from datasets.voxceleb import Voxceleb1Dataset
 from datasets.birdsong_dataset import BirdSongDataset
 from datasets.libri100 import Libri100
 from datasets.tut_urban_sounds import TutUrbanSounds
@@ -24,8 +25,8 @@ def get_dataset(downstream_task_name):
         return split_dataset(IEMOCAPDataset())    
     elif downstream_task_name == "tut_urban":
         return TutUrbanSounds(type="train"),TutUrbanSounds(type="valid")
-    elif downstream_task_name == "voxceleb1":
-        raise NotImplementedError    
+    elif downstream_task_name == "voxceleb_v1":
+        return Voxceleb1Dataset(type="train") , Voxceleb1Dataset(type="valid")   
     elif downstream_task_name == "musan":
         raise NotImplementedError                   
     else:

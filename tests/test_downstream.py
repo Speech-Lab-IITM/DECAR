@@ -24,14 +24,14 @@ def test_model_ouputs():
 
 #-----------------------------BirdSong------------------#
 def test_birdsong_dataset_single():
-    dataset = BirdSongDataset(type='freefield1010')
+    dataset = BirdSongDataset(type='combined')
     mfcc = dataset.__getitem__(1784)
     assert mfcc[0].shape ==(998,64)
     
 
 
 def test_birdsong_dataset_batch():
-    dataset = BirdSongDataset(type='freefield1010')
+    dataset = BirdSongDataset(type='combined')
     loader = torch.utils.data.DataLoader(dataset,
         batch_size=10, collate_fn = DataUtils.collate_fn_padd_2,
         pin_memory=False)
