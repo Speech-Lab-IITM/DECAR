@@ -21,7 +21,7 @@ def get_dataset(downstream_task_name):
     elif downstream_task_name == "musical_instruments":
         return MusicalInstrumentsDataset(type="train") , MusicalInstrumentsDataset(type="valid")
     elif downstream_task_name == "iemocap":
-        raise split_dataset(IEMOCAPDataset())    
+        return split_dataset(IEMOCAPDataset())    
     elif downstream_task_name == "tut_urban":
         return TutUrbanSounds(type="train"),TutUrbanSounds(type="valid")
     elif downstream_task_name == "voxceleb1":
