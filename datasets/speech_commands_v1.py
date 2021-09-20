@@ -12,7 +12,7 @@ from datasets.data_utils import DataUtils
 # test  total : 158539
 
 class SpeechCommandsV1(Dataset):
-    def __init__(self, annotations_file="/speech/sandesh/icassp/tf_speech/train/labels.csv",
+    def __init__(self, annotations_file="/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/SpeechCommandsV1/train/train_data.csv",
                     transform=None,
                     target_transform=None,
                     sample_rate=16000):
@@ -22,7 +22,7 @@ class SpeechCommandsV1(Dataset):
         
         test_labels = ["yes", "no", "up", "down","left", "right", "on", "off", "stop", "go" ] #10
         core_labels = test_labels + ["zero","one","two","three","four","five","six","seven","eight","nine"] # 20
-        auxliary_labels = ["bird","dog","happy", "wow","bed","cat","house","marvin","sheila","tree"] #30
+        auxliary_labels = [] # ["bird","dog","happy", "wow","bed","cat","house","marvin","sheila","tree"] #30
         self.labels = core_labels + auxliary_labels
         self.no_of_classes=len(self.labels) # 30
 
@@ -38,8 +38,7 @@ class SpeechCommandsV1(Dataset):
 
     def __getitem__(self, idx):
         audio_path,label = self.uttr_df.iloc[idx,:]
-        #uttr_mfcc = DataUtils.read_mfcc(audio_path)
-        uttr_melspec = DataUtils.extract_log_mel_spectrogram(audio_path)
+        uttr_melspec = np.load(audio_path+'.npy')
         return uttr_melspec, self.get_label_id(label)
 
 
@@ -51,7 +50,10 @@ class SpeechCommandsV1Test(Dataset):
         self.uttr_df= pd.read_csv(annotations_file)
         self.transform = transform
         self.sample_rate = sample_rate
-        self.labels=['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go' ]
+        test_labels = ["yes", "no", "up", "down","left", "right", "on", "off", "stop", "go" ] #10
+        core_labels = test_labels + ["zero","one","two","three","four","five","six","seven","eight","nine"] # 20
+        auxliary_labels =[] # ["bird","dog","happy", "wow","bed","cat","house","marvin","sheila","tree"] #30
+        self.labels = core_labels + auxliary_labels
         self.no_of_classes=len(self.labels)
 
     def __len__(self):

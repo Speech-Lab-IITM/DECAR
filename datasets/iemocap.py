@@ -8,16 +8,22 @@ import os
 from datasets.data_utils import DataUtils
 
 class IEMOCAPDataset(Dataset):
-    def __init__(self,  
+    def __init__(self, type, 
                     transform=None,
                     target_transform=None,
                     sample_rate=16000):        
         self.feat_root =  DataUtils.root_dir["IEMOCAP"]
-        annotations_file = os.path.join(self.feat_root,'data.csv')
+        if type == "train":
+            annotations_file=os.path.join(self.feat_root,"train_data.csv")
+        elif type == "test":
+            annotations_file=os.path.join(self.feat_root,"test_data.csv")    
+        else:
+            raise NotImplementedError
         self.uttr_labels= pd.read_csv(annotations_file)
         self.transform = transform
         self.sample_rate = sample_rate
-        self.labels_dict = DataUtils.map_labels(self.uttr_labels['Label'].to_numpy())
+        self.labels_dict = {'ang': 0, 'dis': 1, 'exc': 2, 'fea': 3, 'fru': 4, 'hap': 5, 'neu': 6, 'oth': 7, 'sad': 8, 'sur': 9}
+        #DataUtils.map_labels(self.uttr_labels['Label'].to_numpy())
         self.no_of_classes= len(self.labels_dict)
 
     def __len__(self):

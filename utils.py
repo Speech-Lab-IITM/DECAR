@@ -107,14 +107,14 @@ def resume_from_checkpoint(path,model,optimizer):
     return start_epoch , model, optimizer
 
 
-def save_to_checkpoint(down_stream_task,epoch,model,opt):
+def save_to_checkpoint(down_stream_task,dir,epoch,model,opt):
     torch.save({
             'down_stream_task': down_stream_task,
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer' : opt.state_dict()
             },
-            os.path.join('.','exp',down_stream_task, 'checkpoint_' + str(epoch) + "_" + '.pth.tar')
+            os.path.join('.',dir,'models', 'checkpoint_' + str(epoch) + "_" + '.pth.tar')
     )
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------#

@@ -6,11 +6,11 @@ import numpy as np
 class DataUtils():
 
     root_dir ={
-        "Birdsong" : "/speech/Databases/Birdsong/BirdSong",
-        "IEMOCAP" : "/speech/Databases/Birdsong/IEMOCAP",
-        "MusicalInstruments" : "/speech/Databases/Birdsong/MusicalInstruments",
+        "Birdsong" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/birdsong",
+        "IEMOCAP" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/iemocap/",
+        "MusicalInstruments" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/magenta",
         "tut_urban" : "/speech/Databases/Birdsong/TutUrban/TUT-urban-acoustic-scenes-2018-development",
-        "voxceleb_v1" : "/speech/Databases/Birdsong/Voxceleb1/dev"
+        "voxceleb_v1" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/voxceleb/"
     }
 
     @classmethod

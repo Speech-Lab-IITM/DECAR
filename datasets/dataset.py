@@ -4,6 +4,7 @@ from datasets.libri100 import Libri100
 from datasets.tut_urban_sounds import TutUrbanSounds
 from datasets.musical_instruments import MusicalInstrumentsDataset
 from datasets.iemocap import IEMOCAPDataset 
+from datasets.speech_commands_v1 import SpeechCommandsV1
 import torch
 
 def get_dataset(downstream_task_name):
@@ -14,19 +15,19 @@ def get_dataset(downstream_task_name):
     elif downstream_task_name == "birdsong_combined":
         return split_dataset(BirdSongDataset(type="combined"))    
     elif downstream_task_name == "speech_commands_v1":
-        raise NotImplementedError
+        return SpeechCommandsV1() , None
     elif downstream_task_name == "speech_commands_v2":
         raise NotImplementedError 
     elif downstream_task_name == "libri_100":
         return Libri100(type="train") , Libri100(type="valid") 
     elif downstream_task_name == "musical_instruments":
-        return MusicalInstrumentsDataset(type="train") , MusicalInstrumentsDataset(type="valid")
+        return MusicalInstrumentsDataset(type="train") , MusicalInstrumentsDataset(type="test")
     elif downstream_task_name == "iemocap":
-        return split_dataset(IEMOCAPDataset())    
+        return IEMOCAPDataset(type='train'),IEMOCAPDataset(type='test')    
     elif downstream_task_name == "tut_urban":
         return TutUrbanSounds(type="train"),TutUrbanSounds(type="valid")
     elif downstream_task_name == "voxceleb_v1":
-        return Voxceleb1Dataset(type="train") , Voxceleb1Dataset(type="valid")   
+        return Voxceleb1Dataset(type="train") , Voxceleb1Dataset(type="test")   
     elif downstream_task_name == "musan":
         raise NotImplementedError                   
     else:

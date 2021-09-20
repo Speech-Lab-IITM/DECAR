@@ -15,18 +15,21 @@ from torch import nn
 
 import torch.utils.data as data
 from tqdm import tqdm
-
+import matplotlib.pyplot as plt
 from datasets.dataset import get_dataset
 from datasets.data_utils import DataUtils
 from efficientnet.model import DeepCluster_downstream
 from utils import Metric 
 from utils import resume_from_checkpoint
 from utils import save_to_checkpoint
-
+import random
 import logging
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 def get_logger(args):
     create_dir(args.exp_root)
+    create_dir(os.path.join(args.exp_root,'models'))
     logger = logging.getLogger(__name__)
     f_handler = logging.FileHandler(os.path.join(args.exp_root,'train.log'))
     f_handler.setLevel(logging.INFO)
@@ -45,6 +48,7 @@ def log_args(args):
     logger.info("complete args %r",args)         
 
 def set_seed(seed = 31):
+    random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
     if torch.cuda.is_available():
@@ -91,23 +95,38 @@ def train(args):
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)                                            
 
-    train_stats = eval(train_loader, model, criterion)
-    logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
-            -1 , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
-                0,0
-        ) )
+    # train_stats = eval(train_loader, model, criterion)
+    # eval_stats = eval(valid_loader,model,criterion)
+    # logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
+    #         -1 , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
+    #             eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
+    #     ) )
     logger.info("Starting To Train")
+    train_accuracy = []
+    train_losses=[]
+    valid_accuracy = []
+    valid_losses=[]
     for epoch in range(start_epoch,args.epochs+1):
         train_stats = train_one_epoch(train_loader, model, criterion, optimizer, epoch)
         train_loss = train_stats["loss"]
-        save_to_checkpoint(args.down_stream_task,
+        save_to_checkpoint(args.down_stream_task,args.exp_root,
                             epoch,model,optimizer)
         eval_stats = eval(valid_loader,model,criterion)
+        train_losses.append(train_stats["loss"].avg.numpy())
+        train_accuracy.append(train_stats["accuracy"].avg)
+        valid_losses.append(eval_stats["loss"].avg.numpy())
+        valid_accuracy.append(eval_stats["accuracy"].avg)
 
         logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
             epoch , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
                 eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
         ) )
+    logger.info("max train accuracy : {}".format(max(train_accuracy)))
+    logger.info("max valid accuracy : {}".format(max(valid_accuracy)))
+    plt.plot(range(1,len(train_accuracy)+1), train_accuracy, label = "train accuracy",marker = 'x')
+    plt.plot(range(1,len(valid_accuracy)+1), valid_accuracy, label = "valid accuracy",marker = 'x')
+    plt.legend()
+    plt.savefig(os.path.join(args.exp_root,'accuracy.png'))
 
 def train_one_epoch(loader, model, crit, opt, epoch):
     '''

@@ -1,19 +1,46 @@
-import os 
-import numpy as np
-import tensorflow as tf 
-import librosa
-from tqdm import tqdm
-from multiprocessing import Pool
-import argparse
-from functools import partial
-import pandas as pd
-tf.config.set_visible_devices([], 'GPU')
+# import os 
+# import numpy as np
+# import tensorflow as tf 
+# import librosa
+# from tqdm import tqdm
+# from multiprocessing import Pool
+# import argparse
+# from functools import partial
+# import pandas as pd
+# tf.config.set_visible_devices([], 'GPU')
 
-train_csv = pd.read_csv("/speech/Databases/Birdsong/Voxceleb1/dev/test_vox.csv")
-train_csv['Path'] = train_csv.apply(lambda row: os.path.join('spec',str(str(row.file_path)[46:]+'.npy')) , axis = 1)
-train_csv  = train_csv.drop(['file_path'],axis=1)
-train_csv = train_csv.reindex(columns=['Path','label'])
-train_csv.to_csv("/speech/Databases/Birdsong/Voxceleb1/dev/test_data.csv",index=False)
+# train_csv = pd.read_csv("/speech/Databases/Birdsong/Voxceleb1/dev/test_vox.csv")
+# train_csv['Path'] = train_csv.apply(lambda row: os.path.join('spec',str(str(row.file_path)[46:]+'.npy')) , axis = 1)
+# train_csv  = train_csv.drop(['file_path'],axis=1)
+# train_csv = train_csv.reindex(columns=['Path','label'])
+# train_csv.to_csv("/speech/Databases/Birdsong/Voxceleb1/dev/test_data.csv",index=False)
+
+
+import json
+import pandas as pd
+import os
+from tqdm import tqdm
+from pydub import AudioSegment  
+
+train_csv = pd.read_csv("/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/voxceleb/test_vox.csv")
+lenghts = []
+drop_index = []
+for idx,row in train_csv.iterrows() :
+    wav_file = AudioSegment.from_file(file = os.path.join("/speech/Databases/Birdsong/Voxceleb1/dev/wav",row['file_path'][46:]), 
+                                  format = "wav")
+    lenghts.append(len(wav_file))
+    if len(wav_file) > 50000 :
+        drop_index.append(idx)
+
+
+train_new_csv = train_csv.drop(drop_index,axis=0)
+print(len(train_csv)- len(train_new_csv))
+# train_new_csv.to_csv("/speech/Databases/Birdsong/Voxceleb1/dev/train_new_vox.csv")
+train_new_csv['Path'] = train_new_csv.apply(lambda row: os.path.join('spec',str(str(row.file_path)[46:]+'.npy')) , axis = 1)
+train_new_csv  = train_new_csv.drop(['file_path'],axis=1)
+train_new_csv = train_new_csv.reindex(columns=['Path','label'])
+train_new_csv.to_csv("/speech/Databases/Birdsong/Voxceleb1/dev/test_data.csv",index=False)
+
 
 # def get_parser():
 #     parser = argparse.ArgumentParser()

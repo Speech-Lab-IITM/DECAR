@@ -20,6 +20,8 @@ class MusicalInstrumentsDataset(Dataset):
             annotations_file = os.path.join(self.feat_root,'train_data.csv')
         elif(type=="valid"):
             annotations_file = os.path.join(self.feat_root,'valid_data.csv')
+        elif(type=="test"):
+            annotations_file = os.path.join(self.feat_root,'test_data.csv')    
         else:
             raise NotImplementedError
 
