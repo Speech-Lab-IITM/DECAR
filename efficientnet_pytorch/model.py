@@ -160,12 +160,13 @@ class EfficientNet(nn.Module):
         >>> outputs = model(inputs)
     """
 
-    def __init__(self, blocks_args=None, global_params=None):
+    def __init__(self, final_pooling_type="Avg",blocks_args=None, global_params=None):
         super().__init__()
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self._global_params = global_params
         self._blocks_args = blocks_args
+        self._final_pooling_type = final_pooling_type
 
         # Batch norm parameters
         bn_mom = 1 - self._global_params.batch_norm_momentum
@@ -210,7 +211,12 @@ class EfficientNet(nn.Module):
         self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
         # Final linear layer
-        self._avg_pooling = nn.AdaptiveAvgPool2d(1)#nn.AdaptiveMaxPool2d(1)
+        if(self._final_pooling_type == "Avg"):
+            self._avg_pooling = nn.AdaptiveAvgPool2d(1)
+        elif(self._final_pooling_type == "Max"):
+            self._avg_pooling = nn.AdaptiveMaxPool2d(1)
+        else:
+            raise NotImplementedError    
         if self._global_params.include_top:
             self._dropout = nn.Dropout(self._global_params.dropout_rate)
             self._fc = nn.Linear(out_channels, self._global_params.num_classes)
@@ -321,7 +327,7 @@ class EfficientNet(nn.Module):
         return x
 
     @classmethod
-    def from_name(cls, model_name, in_channels=3, **override_params):
+    def from_name(cls, model_name,final_pooling_type="Avg", in_channels=3, **override_params):
         """Create an efficientnet model according to name.
 
         Args:
@@ -340,7 +346,7 @@ class EfficientNet(nn.Module):
             An efficientnet model.
         """
         cls._check_model_name_is_valid(model_name)
-        blocks_args, global_params = get_model_params(model_name, override_params)
+        blocks_args, global_params = get_model_params(final_pooling_type,model_name, override_params)
         model = cls(blocks_args, global_params)
         model._change_in_channels(in_channels)
         return model

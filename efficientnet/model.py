@@ -4,9 +4,10 @@ import torch
 from torch import nn
 
 class DeepCluster_ICASSP(nn.Module):
-    def __init__(self, no_of_classes =256):
+    def __init__(self, no_of_classes =256,final_pooling_type="Avg"):
         super(DeepCluster_ICASSP, self).__init__()
         self.model_efficient = EfficientNet.from_name('efficientnet-b0',
+                                                    final_pooling_type=final_pooling_type,
                                                     include_top = False,
                                                     in_channels = 1,
                                                     image_size = None)
@@ -26,9 +27,10 @@ class DeepCluster_ICASSP(nn.Module):
         return x
 
 class DeepCluster_downstream(nn.Module):
-    def __init__(self, no_of_classes =256):
+    def __init__(self, no_of_classes =256,final_pooling_type="Avg"):
         super(DeepCluster_downstream, self).__init__()
         self.model_efficient = EfficientNet.from_name('efficientnet-b0',
+                                                    final_pooling_type=final_pooling_type,
                                                     include_top = False,
                                                     in_channels = 1,
                                                     image_size = None)
