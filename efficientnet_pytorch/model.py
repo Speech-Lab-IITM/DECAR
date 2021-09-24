@@ -346,8 +346,8 @@ class EfficientNet(nn.Module):
             An efficientnet model.
         """
         cls._check_model_name_is_valid(model_name)
-        blocks_args, global_params = get_model_params(final_pooling_type,model_name, override_params)
-        model = cls(blocks_args, global_params)
+        blocks_args, global_params = get_model_params(model_name, override_params)
+        model = cls(final_pooling_type,blocks_args, global_params)
         model._change_in_channels(in_channels)
         return model
 

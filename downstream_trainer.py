@@ -62,13 +62,13 @@ def move_to_gpu(*args):
 
 def train(args):    
     start_epoch=1
-    args.exp_root = os.path.join('.','exp',args.down_stream_task,args.tag)
+    args.exp_root = os.path.join('.','exp',args.down_stream_task,args.final_pooling_type,args.tag)
     logger = get_logger(args)
     log_args(args)
     train_dataset,valid_dataset = get_dataset(args.down_stream_task)
 
     # -----------model criterion optimizer ---------------- #
-    model = DeepCluster_downstream(no_of_classes=train_dataset.no_of_classes)
+    model = DeepCluster_downstream(no_of_classes=train_dataset.no_of_classes,final_pooling_type=args.final_pooling_type)
     model.model_efficient = torch.nn.DataParallel(model.model_efficient)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
@@ -88,6 +88,7 @@ def train(args):
 
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                 batch_size=args.batch_size,
+                                                shuffle=True,
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)
     valid_loader = torch.utils.data.DataLoader(valid_dataset,
