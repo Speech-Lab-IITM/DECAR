@@ -1,9 +1,9 @@
 from datasets.voxceleb import Voxceleb1Dataset
 from datasets.birdsong_dataset import BirdSongDataset
 from datasets.libri100 import Libri100
-from datasets.tut_urban_sounds import TutUrbanSounds
+from datasets.tut_urban_sounds import TutUrbanSounds ,TutUrbanSoundsL2
 from datasets.musical_instruments import MusicalInstrumentsDataset
-from datasets.iemocap import IEMOCAPDataset 
+from datasets.iemocap import IEMOCAPDataset , IEMOCAPDatasetL2
 from datasets.speech_commands_v1 import SpeechCommandsV1
 import torch
 
@@ -24,8 +24,12 @@ def get_dataset(downstream_task_name):
         return MusicalInstrumentsDataset(type="train") , MusicalInstrumentsDataset(type="test")
     elif downstream_task_name == "iemocap":
         return IEMOCAPDataset(type='train'),IEMOCAPDataset(type='test')    
-    elif downstream_task_name == "tut_urban":
-        return TutUrbanSounds(type="train"),TutUrbanSounds(type="valid")
+    elif downstream_task_name == "iemocap_l2":
+        return IEMOCAPDatasetL2(type='train'),IEMOCAPDatasetL2(type='test')        
+    elif downstream_task_name == "tut_urban": 
+        return TutUrbanSounds(type="train"),TutUrbanSounds(type="test")
+    elif downstream_task_name == "tut_urban_l2":
+        return TutUrbanSoundsL2(type="train"),TutUrbanSoundsL2(type="test")    
     elif downstream_task_name == "voxceleb_v1":
         return Voxceleb1Dataset(type="train") , Voxceleb1Dataset(type="test")   
     elif downstream_task_name == "musan":

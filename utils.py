@@ -65,7 +65,9 @@ def get_downstream_parser():
     parser.add_argument('--freeze_effnet', default=True, type=str2bool,
                         help='Path to Pretrain weights')  
     parser.add_argument('--final_pooling_type', default='Avg', type=str,
-                        help='valid final pooling types are Avg,Max')                                                            
+                        help='valid final pooling types are Avg,Max') 
+    parser.add_argument('--use_l2', default='l2', type=str,
+                        help='datasetl2')                                                                                
     parser.add_argument('--load_only_efficientNet',default = True,type =str2bool)  
     parser.add_argument('--tag',default = "pretrain_big",type =str)                    
     return parser

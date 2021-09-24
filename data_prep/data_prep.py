@@ -33,6 +33,7 @@ def extract_log_mel_spectrogram(audio_path,
                                 fmax=7800.0):
         """Extract frames of log mel spectrogram from a raw waveform."""
         waveform,sr = librosa.core.load(audio_path, sample_rate)
+        waveform = tf.math.l2_normalize(waveform,epsilon=1e-9).numpy()
         stfts = tf.signal.stft(
             waveform,
             frame_length=frame_length,
@@ -63,10 +64,10 @@ def write_feats(root_dir,prefix,files_array):
     for file in tqdm(files_array):
         if file.endswith("wav"):
             feat = extract_log_mel_spectrogram(os.path.join(root_dir,prefix,file))
-            np.save(os.path.join(root_dir,'spec',file),feat)
+            np.save(os.path.join(root_dir,'specl2',file),feat)
 
 def run_parallel(args):
-    create_dir(os.path.join(args.root_dir,'spec'))
+    create_dir(os.path.join(args.root_dir,'specl2'))
 
     list_files = np.array(os.listdir(os.path.join(args.root_dir,args.prefix)))
     list_ranges = np.array_split(list_files, args.no_workers)
