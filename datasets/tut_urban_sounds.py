@@ -18,8 +18,6 @@ class TutUrbanSounds(Dataset):
         audio_root = DataUtils.root_dir["tut_urban"]
         if(type == "train"):
             annotations_file = os.path.join(audio_root,"train_data.csv") 
-        elif(type=="valid"):
-            annotations_file = os.path.join(audio_root,"valid_data.csv")
         elif(type=="test"):
             annotations_file = os.path.join(audio_root,"test_data.csv")    
         else:
@@ -37,9 +35,10 @@ class TutUrbanSounds(Dataset):
         return len(self.uttr_labels)
 
     def __getitem__(self, idx):
-        idx,label = self.uttr_labels.iloc[idx,:]
-        uttr_path = os.path.join(self.audio_root, str(idx))
+        row = self.uttr_labels.iloc[idx,:]
+        uttr_path = os.path.join(self.audio_root,row['Path'])
         uttr_melspec = np.load(uttr_path)
+        label = row['Label']
         return uttr_melspec, self.labels_dict[label]
 
 
@@ -54,8 +53,6 @@ class TutUrbanSoundsL2(Dataset):
         audio_root = DataUtils.root_dir["tut_urban"]
         if(type == "train"):
             annotations_file = os.path.join(audio_root,"train_data_l2.csv") 
-        elif(type=="valid"):
-            annotations_file = os.path.join(audio_root,"valid_data_l2.csv")
         elif(type=="test"):
             annotations_file = os.path.join(audio_root,"test_data_l2.csv")    
         else:
@@ -73,8 +70,9 @@ class TutUrbanSoundsL2(Dataset):
         return len(self.uttr_labels)
 
     def __getitem__(self, idx):
-        idx,label = self.uttr_labels.iloc[idx,:]
-        uttr_path = os.path.join(self.audio_root, str(idx))
+        row = self.uttr_labels.iloc[idx,:]
+        uttr_path =os.path.join(self.audio_root,row['PathL2'])
         uttr_melspec = np.load(uttr_path)
+        label = row['Label']
         return uttr_melspec, self.labels_dict[label]
 

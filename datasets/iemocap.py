@@ -30,11 +30,11 @@ class IEMOCAPDataset(Dataset):
         return len(self.uttr_labels)
 
     def __getitem__(self, idx):
-        path,label = self.uttr_labels.iloc[idx,:]
-        uttr_path = os.path.join(self.feat_root,path)
+        row = self.uttr_labels.iloc[idx,:]
+        uttr_path =os.path.join(self.feat_root,row['Path'])
         uttr_melspec = np.load(uttr_path)
+        label = row['Label']
         return uttr_melspec, self.labels_dict[label]
-
 
 
 class IEMOCAPDatasetL2(Dataset):
@@ -44,9 +44,9 @@ class IEMOCAPDatasetL2(Dataset):
                     sample_rate=16000):        
         self.feat_root =  DataUtils.root_dir["IEMOCAP"]
         if type == "train":
-            annotations_file=os.path.join(self.feat_root,"train_data_l2.csv")
+            annotations_file=os.path.join(self.feat_root,"train_data.csv")
         elif type == "test":
-            annotations_file=os.path.join(self.feat_root,"test_data_l2.csv")    
+            annotations_file=os.path.join(self.feat_root,"test_data.csv")    
         else:
             raise NotImplementedError
         self.uttr_labels= pd.read_csv(annotations_file)
@@ -60,8 +60,8 @@ class IEMOCAPDatasetL2(Dataset):
         return len(self.uttr_labels)
 
     def __getitem__(self, idx):
-        path,label = self.uttr_labels.iloc[idx,:]
-        uttr_path = os.path.join(self.feat_root,path)
+        row = self.uttr_labels.iloc[idx,:]
+        uttr_path =os.path.join(self.feat_root,row['PathL2'])
         uttr_melspec = np.load(uttr_path)
+        label = row['Label']
         return uttr_melspec, self.labels_dict[label]
-

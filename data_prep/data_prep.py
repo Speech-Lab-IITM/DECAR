@@ -5,6 +5,7 @@ import librosa
 from tqdm import tqdm
 from multiprocessing import Pool
 import argparse
+import pandas as pd
 from functools import partial
 tf.config.set_visible_devices([], 'GPU')
 
@@ -15,7 +16,9 @@ def get_parser():
     parser.add_argument('--no_workers', default=10, type=int, metavar='N',
                         help='number of total epochs to run')
     parser.add_argument('--prefix', default='wav', type=str,
-                        help='number of total epochs to run')                    
+                        help='number of total epochs to run')     
+    parser.add_argument('--suffix', default='spec' , type=str)
+    parser.add_argument('--file', default=None , type=str)               
     return parser
 
 
@@ -60,18 +63,23 @@ def extract_log_mel_spectrogram(audio_path,
         return log_mel_spectrograms.numpy()
 
 
-def write_feats(root_dir,prefix,files_array):
+def write_feats(root_dir,prefix,suffix,files_array):
     for file in tqdm(files_array):
         if file.endswith("wav"):
             feat = extract_log_mel_spectrogram(os.path.join(root_dir,prefix,file))
-            np.save(os.path.join(root_dir,'specl2',file),feat)
+            file_path =os.path.join(root_dir,suffix,file)
+            create_dir(os.path.dirname(file_path))
+            np.save(file_path,feat)
 
 def run_parallel(args):
-    create_dir(os.path.join(args.root_dir,'specl2'))
-
-    list_files = np.array(os.listdir(os.path.join(args.root_dir,args.prefix)))
+    create_dir(os.path.join(args.root_dir,args.suffix))
+    if(args.file != None):
+        list_files = np.array(pd.read_csv(os.path.join(args.root_dir,args.file))['AudioPath'].values)
+    else:
+        list_files = np.array(os.listdir(os.path.join(args.root_dir,args.prefix)))
+    
     list_ranges = np.array_split(list_files, args.no_workers)
-    pfunc=partial(write_feats,args.root_dir,args.prefix)
+    pfunc=partial(write_feats,args.root_dir,args.prefix,args.suffix)
     pool = Pool(processes=len(list_ranges))
     pool.map(pfunc, list_ranges)
 
