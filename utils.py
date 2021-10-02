@@ -74,6 +74,12 @@ def get_downstream_parser():
 
 #-----------------------------------------------------------------------------------------------#
 
+def freeze_effnet(model):
+    logger=logging.getLogger("__main__")
+    logger.info("freezing effnet weights")
+    for param in model.model_efficient.parameters():
+        param.requires_grad = False
+
 def load_pretrain(path,model,
                 load_only_effnet=False,freeze_effnet=False):
     logger=logging.getLogger("__main__")

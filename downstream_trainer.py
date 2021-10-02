@@ -3,7 +3,7 @@ import os
 import pickle
 import time
 import numpy as np
-from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser , load_pretrain
+from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser , load_pretrain ,freeze_effnet
 
 from os.path import join as path_join
 import json
@@ -80,6 +80,9 @@ def train(args):
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
         load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
+    elif args.freeze_effnet:
+        logger.info("Random Weights init")
+        freeze_effnet(model)
     else:
         logger.info("Random Weights init")
         pass

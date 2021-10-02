@@ -23,10 +23,11 @@ class SpeechCommandsV2(Dataset):
         self.transform = transform
         self.sample_rate = sample_rate
     
-        self.labels = [ "bird","down","follow","go","learn", 
-                        "nine","on","seven","stop","two","wow","backward","cat","eight","forward","happy",
-                        "left","no","one","sheila","three","up", "yes","bed","dog","five",
-                        "four","house","marvin","off","right","six","tree","visual","zero"]
+        self.labels = ['unknown', 'down', 'go', 'silence', 'on', 'stop', 'left', 'no','up', 'yes', 'off', 'right']
+        # [ "bird","down","follow","go","learn", 
+        #                 "nine","on","seven","stop","two","wow","backward","cat","eight","forward","happy",
+        #                 "left","no","one","sheila","three","up", "yes","bed","dog","five",
+        #                 "four","house","marvin","off","right","six","tree","visual","zero"]
         self.no_of_classes=len(self.labels) # 35
 
     def __len__(self):

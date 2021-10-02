@@ -1,10 +1,11 @@
+from datasets.language_identification import LanguageIdentification
 from datasets.voxceleb import Voxceleb1Dataset
 from datasets.birdsong_dataset import BirdSongDataset ,BirdSongDatasetL2
 from datasets.libri100 import Libri100 ,Libri100L2
 from datasets.tut_urban_sounds import TutUrbanSounds ,TutUrbanSoundsL2
 from datasets.musical_instruments import MusicalInstrumentsDataset
 from datasets.iemocap import IEMOCAPDataset , IEMOCAPDatasetL2
-from datasets.speech_commands_v1 import SpeechCommandsV1 
+from datasets.speech_commands_v1 import SpeechCommandsV1 , SpeechCommandsV1L2
 from datasets.speech_commands_v2 import SpeechCommandsV2 , SpeechCommandsV2L2
 import torch
 
@@ -18,7 +19,9 @@ def get_dataset(downstream_task_name):
     elif downstream_task_name == "birdsong_combined_l2":
         return split_dataset(BirdSongDatasetL2(type="combined"))        
     elif downstream_task_name == "speech_commands_v1":
-        return SpeechCommandsV1() , SpeechCommandsV1()
+        return SpeechCommandsV1(type="train") , SpeechCommandsV1(type="test")
+    elif downstream_task_name == "speech_commands_v1_l2":
+        return SpeechCommandsV1L2(type="train") , SpeechCommandsV1L2(type="test")
     elif downstream_task_name == "speech_commands_v2":
         return SpeechCommandsV2(type="train") , SpeechCommandsV2(type="test") 
     elif downstream_task_name == "speech_commands_v2_l2":
@@ -40,7 +43,9 @@ def get_dataset(downstream_task_name):
     elif downstream_task_name == "voxceleb_v1":
         return Voxceleb1Dataset(type="train") , Voxceleb1Dataset(type="test")   
     elif downstream_task_name == "musan":
-        raise NotImplementedError                   
+        raise NotImplementedError      
+    elif downstream_task_name == "language_identification":
+        return LanguageIdentification(type="train"), LanguageIdentification(type="test")                 
     else:
         raise NotImplementedError
 

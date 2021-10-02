@@ -11,7 +11,8 @@ class DataUtils():
         "Libri100" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/libri100/",
         "MusicalInstruments" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/magenta",
         "tut_urban" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/utu/TUT-urban-acoustic-scenes-2018-development",
-        "voxceleb_v1" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/voxceleb/"
+        "voxceleb_v1" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/voxceleb/",
+        "language_identification" : "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/lid"
     }
 
     @classmethod
