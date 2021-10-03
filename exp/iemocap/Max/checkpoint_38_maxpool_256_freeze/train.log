@@ -1,0 +1,349 @@
+Downstream Task iemocap
+Resume False, load only efficient net True, from path /nlsasfs/home/nltm-pilot/sandeshk/icassp/checkpoints/checkpoint_38_maxpool_256.pth.tar 
+BS 64
+complete args Namespace(batch_size=64, down_stream_task='iemocap', epochs=50, exp_root='./exp/iemocap/Max/checkpoint_38_maxpool_256_freeze', final_pooling_type='Max', freeze_effnet=True, load_only_efficientNet=True, pretrain_path='/nlsasfs/home/nltm-pilot/sandeshk/icassp/checkpoints/checkpoint_38_maxpool_256.pth.tar', resume=False, tag='checkpoint_38_maxpool_256_freeze', use_l2='l2')
+DeepCluster_downstream(
+  (model_efficient): DataParallel(
+    (module): EfficientNet(
+      (_conv_stem): Conv2dDynamicSamePadding(1, 32, kernel_size=(3, 3), stride=(2, 2), bias=False)
+      (_bn0): BatchNorm2d(32, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+      (_blocks): ModuleList(
+        (0): MBConvBlock(
+          (_depthwise_conv): Conv2dDynamicSamePadding(32, 32, kernel_size=(3, 3), stride=[1, 1], groups=32, bias=False)
+          (_bn1): BatchNorm2d(32, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            32, 8, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            8, 32, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(32, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(16, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (1): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(16, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(96, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(96, 96, kernel_size=(3, 3), stride=[2, 2], groups=96, bias=False)
+          (_bn1): BatchNorm2d(96, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            96, 4, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            4, 96, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(96, 24, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(24, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (2): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(24, 144, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(144, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(144, 144, kernel_size=(3, 3), stride=(1, 1), groups=144, bias=False)
+          (_bn1): BatchNorm2d(144, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            144, 6, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            6, 144, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(144, 24, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(24, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (3): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(24, 144, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(144, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(144, 144, kernel_size=(5, 5), stride=[2, 2], groups=144, bias=False)
+          (_bn1): BatchNorm2d(144, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            144, 6, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            6, 144, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(144, 40, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(40, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (4): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(40, 240, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(240, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(240, 240, kernel_size=(5, 5), stride=(1, 1), groups=240, bias=False)
+          (_bn1): BatchNorm2d(240, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            240, 10, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            10, 240, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(240, 40, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(40, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (5): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(40, 240, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(240, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(240, 240, kernel_size=(3, 3), stride=[2, 2], groups=240, bias=False)
+          (_bn1): BatchNorm2d(240, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            240, 10, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            10, 240, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(240, 80, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(80, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (6): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(480, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(480, 480, kernel_size=(3, 3), stride=(1, 1), groups=480, bias=False)
+          (_bn1): BatchNorm2d(480, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            480, 20, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            20, 480, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(480, 80, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(80, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (7): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(480, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(480, 480, kernel_size=(3, 3), stride=(1, 1), groups=480, bias=False)
+          (_bn1): BatchNorm2d(480, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            480, 20, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            20, 480, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(480, 80, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(80, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (8): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(80, 480, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(480, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(480, 480, kernel_size=(5, 5), stride=[1, 1], groups=480, bias=False)
+          (_bn1): BatchNorm2d(480, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            480, 20, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            20, 480, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(480, 112, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(112, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (9): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(112, 672, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(672, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(672, 672, kernel_size=(5, 5), stride=(1, 1), groups=672, bias=False)
+          (_bn1): BatchNorm2d(672, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            672, 28, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            28, 672, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(672, 112, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(112, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (10): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(112, 672, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(672, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(672, 672, kernel_size=(5, 5), stride=(1, 1), groups=672, bias=False)
+          (_bn1): BatchNorm2d(672, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            672, 28, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            28, 672, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(672, 112, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(112, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (11): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(112, 672, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(672, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(672, 672, kernel_size=(5, 5), stride=[2, 2], groups=672, bias=False)
+          (_bn1): BatchNorm2d(672, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            672, 28, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            28, 672, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(672, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(192, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (12): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(192, 1152, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(1152, 1152, kernel_size=(5, 5), stride=(1, 1), groups=1152, bias=False)
+          (_bn1): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            1152, 48, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            48, 1152, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(1152, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(192, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (13): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(192, 1152, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(1152, 1152, kernel_size=(5, 5), stride=(1, 1), groups=1152, bias=False)
+          (_bn1): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            1152, 48, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            48, 1152, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(1152, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(192, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (14): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(192, 1152, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(1152, 1152, kernel_size=(5, 5), stride=(1, 1), groups=1152, bias=False)
+          (_bn1): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            1152, 48, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            48, 1152, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(1152, 192, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(192, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+        (15): MBConvBlock(
+          (_expand_conv): Conv2dDynamicSamePadding(192, 1152, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn0): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_depthwise_conv): Conv2dDynamicSamePadding(1152, 1152, kernel_size=(3, 3), stride=[1, 1], groups=1152, bias=False)
+          (_bn1): BatchNorm2d(1152, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_se_reduce): Conv2dStaticSamePadding(
+            1152, 48, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_se_expand): Conv2dStaticSamePadding(
+            48, 1152, kernel_size=(1, 1), stride=(1, 1)
+            (static_padding): Identity()
+          )
+          (_project_conv): Conv2dDynamicSamePadding(1152, 320, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (_bn2): BatchNorm2d(320, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+          (_swish): MemoryEfficientSwish()
+        )
+      )
+      (_conv_head): Conv2dDynamicSamePadding(320, 1280, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (_bn1): BatchNorm2d(1280, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
+      (_avg_pooling): AdaptiveMaxPool2d(output_size=1)
+      (_swish): MemoryEfficientSwish()
+    )
+  )
+  (classifier): Linear(in_features=1280, out_features=4, bias=True)
+)
+loading from checkpoint only weights : /nlsasfs/home/nltm-pilot/sandeshk/icassp/checkpoints/checkpoint_38_maxpool_256.pth.tar
+Model missing keys
+['classifier.weight', 'classifier.bias']
+Model unexpected keys
+[]
+freezing effnet weights
+done loading
+Starting To Train
+epoch :1 Train loss: 1.121022343635559 Train accuracy: 0.5394588500563697 Valid loss: 1.1594727039337158 Valid accuracy: 0.5435244161358811
+epoch :2 Train loss: 1.095197081565857 Train accuracy: 0.5487598647125141 Valid loss: 1.1529322862625122 Valid accuracy: 0.5031847133757962
+epoch :3 Train loss: 1.0280543565750122 Train accuracy: 0.5780721533258174 Valid loss: 1.0807195901870728 Valid accuracy: 0.5753715498938429
+epoch :4 Train loss: 1.0146403312683105 Train accuracy: 0.5961104847801578 Valid loss: 1.0849465131759644 Valid accuracy: 0.5721868365180467
+epoch :5 Train loss: 0.9981752634048462 Train accuracy: 0.5963923337091319 Valid loss: 1.065268635749817 Valid accuracy: 0.5817409766454352
+epoch :6 Train loss: 0.989631175994873 Train accuracy: 0.600620067643743 Valid loss: 1.0624034404754639 Valid accuracy: 0.5923566878980892
+epoch :7 Train loss: 0.9896148443222046 Train accuracy: 0.5913190529875987 Valid loss: 1.0643675327301025 Valid accuracy: 0.5859872611464968
+epoch :8 Train loss: 0.9882558584213257 Train accuracy: 0.592728297632469 Valid loss: 1.084792137145996 Valid accuracy: 0.5743099787685775
+epoch :9 Train loss: 0.9886014461517334 Train accuracy: 0.5887824126268321 Valid loss: 1.0705569982528687 Valid accuracy: 0.5774946921443737
+epoch :10 Train loss: 0.9961298108100891 Train accuracy: 0.5904735062006764 Valid loss: 1.0817433595657349 Valid accuracy: 0.5679405520169851
+epoch :11 Train loss: 0.9859145283699036 Train accuracy: 0.6023111612175873 Valid loss: 1.0629045963287354 Valid accuracy: 0.5923566878980892
+epoch :12 Train loss: 0.9823037385940552 Train accuracy: 0.59695603156708 Valid loss: 1.0774037837982178 Valid accuracy: 0.5743099787685775
+epoch :13 Train loss: 0.9875373840332031 Train accuracy: 0.5932919954904171 Valid loss: 1.0586419105529785 Valid accuracy: 0.5934182590233545
+epoch :14 Train loss: 1.027527093887329 Train accuracy: 0.5978015783540023 Valid loss: 1.0786855220794678 Valid accuracy: 0.5966029723991507
+epoch :15 Train loss: 1.0271477699279785 Train accuracy: 0.5856820744081173 Valid loss: 1.0739189386367798 Valid accuracy: 0.5912951167728238
+epoch :16 Train loss: 0.9959737658500671 Train accuracy: 0.596674182638106 Valid loss: 1.0637611150741577 Valid accuracy: 0.5944798301486199
+epoch :17 Train loss: 1.0076305866241455 Train accuracy: 0.59695603156708 Valid loss: 1.067766785621643 Valid accuracy: 0.5923566878980892
+epoch :18 Train loss: 1.023747444152832 Train accuracy: 0.5921645997745209 Valid loss: 1.0765674114227295 Valid accuracy: 0.5849256900212314
+epoch :19 Train loss: 1.0269489288330078 Train accuracy: 0.5975197294250282 Valid loss: 1.0759567022323608 Valid accuracy: 0.5796178343949044
+epoch :20 Train loss: 1.0141611099243164 Train accuracy: 0.5913190529875987 Valid loss: 1.0908573865890503 Valid accuracy: 0.5658174097664543
+epoch :21 Train loss: 1.0083134174346924 Train accuracy: 0.596674182638106 Valid loss: 1.071692705154419 Valid accuracy: 0.5923566878980892
+epoch :22 Train loss: 1.0119571685791016 Train accuracy: 0.6025930101465614 Valid loss: 1.0783653259277344 Valid accuracy: 0.5859872611464968
+epoch :23 Train loss: 1.0161794424057007 Train accuracy: 0.6054114994363021 Valid loss: 1.0657222270965576 Valid accuracy: 0.5902335456475584
+epoch :24 Train loss: 1.0125296115875244 Train accuracy: 0.6003382187147689 Valid loss: 1.082629919052124 Valid accuracy: 0.5774946921443737
+epoch :25 Train loss: 1.0066642761230469 Train accuracy: 0.5961104847801578 Valid loss: 1.0919194221496582 Valid accuracy: 0.578556263269639
+epoch :26 Train loss: 0.9808078408241272 Train accuracy: 0.605129650507328 Valid loss: 1.079537272453308 Valid accuracy: 0.5806794055201698
+epoch :27 Train loss: 1.003320336341858 Train accuracy: 0.6014656144306652 Valid loss: 1.0732769966125488 Valid accuracy: 0.5828025477707006
+epoch :28 Train loss: 1.0033055543899536 Train accuracy: 0.5913190529875987 Valid loss: 1.0621801614761353 Valid accuracy: 0.5828025477707006
+epoch :29 Train loss: 0.9964548945426941 Train accuracy: 0.6104847801578354 Valid loss: 1.0618191957473755 Valid accuracy: 0.5934182590233545
+epoch :30 Train loss: 0.9949733018875122 Train accuracy: 0.6062570462232244 Valid loss: 1.0852019786834717 Valid accuracy: 0.583864118895966
+epoch :31 Train loss: 0.9861194491386414 Train accuracy: 0.5913190529875987 Valid loss: 1.070402979850769 Valid accuracy: 0.589171974522293
+epoch :32 Train loss: 0.981356143951416 Train accuracy: 0.5980834272829764 Valid loss: 1.062583327293396 Valid accuracy: 0.5806794055201698
+epoch :33 Train loss: 0.9872676134109497 Train accuracy: 0.6102029312288614 Valid loss: 1.0952221155166626 Valid accuracy: 0.5615711252653928
+epoch :34 Train loss: 0.9763853549957275 Train accuracy: 0.6025930101465614 Valid loss: 1.0790965557098389 Valid accuracy: 0.578556263269639
+epoch :35 Train loss: 0.9747999310493469 Train accuracy: 0.6025930101465614 Valid loss: 1.076597809791565 Valid accuracy: 0.5700636942675159
+epoch :36 Train loss: 0.997288167476654 Train accuracy: 0.5986471251409244 Valid loss: 1.0615575313568115 Valid accuracy: 0.5774946921443737
+epoch :37 Train loss: 0.9756283164024353 Train accuracy: 0.6104847801578354 Valid loss: 1.066083312034607 Valid accuracy: 0.5817409766454352
+epoch :38 Train loss: 0.9908607602119446 Train accuracy: 0.6082299887260428 Valid loss: 1.083868145942688 Valid accuracy: 0.5668789808917197
+epoch :39 Train loss: 0.9888206124305725 Train accuracy: 0.5980834272829764 Valid loss: 1.0856086015701294 Valid accuracy: 0.5552016985138004
+epoch :40 Train loss: 0.9723535776138306 Train accuracy: 0.6023111612175873 Valid loss: 1.0649528503417969 Valid accuracy: 0.5700636942675159
+epoch :41 Train loss: 0.9712902307510376 Train accuracy: 0.6118940248027057 Valid loss: 1.0788854360580444 Valid accuracy: 0.5711252653927813
+epoch :42 Train loss: 0.9589722156524658 Train accuracy: 0.6124577226606539 Valid loss: 1.0646737813949585 Valid accuracy: 0.5711252653927813
+epoch :43 Train loss: 0.9487630724906921 Train accuracy: 0.6138669673055243 Valid loss: 1.067299246788025 Valid accuracy: 0.5753715498938429
+epoch :44 Train loss: 0.9608030319213867 Train accuracy: 0.6121758737316798 Valid loss: 1.0826022624969482 Valid accuracy: 0.5562632696390658
+epoch :45 Train loss: 0.9407768845558167 Train accuracy: 0.624859075535513 Valid loss: 1.0701535940170288 Valid accuracy: 0.578556263269639
+epoch :46 Train loss: 0.9606975317001343 Train accuracy: 0.6071025930101466 Valid loss: 1.0538864135742188 Valid accuracy: 0.5912951167728238
+epoch :47 Train loss: 0.9848209619522095 Train accuracy: 0.6110484780157835 Valid loss: 1.0733399391174316 Valid accuracy: 0.5743099787685775
+epoch :48 Train loss: 0.9876278042793274 Train accuracy: 0.6034385569334837 Valid loss: 1.0792934894561768 Valid accuracy: 0.5552016985138004
+epoch :49 Train loss: 0.984087347984314 Train accuracy: 0.6059751972942503 Valid loss: 1.080226182937622 Valid accuracy: 0.578556263269639
+epoch :50 Train loss: 0.9693405628204346 Train accuracy: 0.6152762119503946 Valid loss: 1.0656567811965942 Valid accuracy: 0.5870488322717622
+max train accuracy : 0.624859075535513
+max valid accuracy : 0.5966029723991507

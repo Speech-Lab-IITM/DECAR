@@ -1,6 +1,6 @@
 /birdsong
 __pycache__
 */__pycache__
-exp/
+*.pth.tar
 logs/
 temp/
