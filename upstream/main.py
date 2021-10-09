@@ -2,149 +2,43 @@ import argparse
 import os
 import pickle
 import time
-
-import faiss
 import numpy as np
-from sklearn.metrics.cluster import normalized_mutual_info_score
 import torch.backends.cudnn as cudnn
-#import clustering
-#import models
-from utils import AverageMeter,UnifLabelSampler
-#, Logger, UnifLabelSampler
-
+from sklearn.metrics.cluster import normalized_mutual_info_score
 from os.path import join as path_join
 import json
-from torch.utils.data import Dataset
-import torchaudio
-from torchaudio.transforms import Resample
 import torch
-from torch import nn
-import librosa
 import tensorflow as tf
-from efficientnet_pytorch import EfficientNet
-from scipy.sparse import csr_matrix, find
-import torch.utils.data as data
+import logging
+from torch import nn
 
 
-from utils import extract_log_mel_spectrogram
-from utils import compute_features
-from utils import run_kmeans
-from utils import preprocess_features
-from utils import Kmeans
+from utils import extract_log_mel_spectrogram, compute_features, get_upstream_parser, AverageMeter, UnifLabelSampler, Logger
+from clustering import run_kmeans, Kmeans, PIC, rearrange_clusters
 from specaugment import specaug
+from datasets import collate_fn_padd_1, collate_fn_padd_2, DeepCluster, DeepCluster_Reassigned
+from models import DeepCluster_ICASSP
 
 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 AUDIO_SR = 16000
-
-list_of_files_directory = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
-
 tf.config.set_visible_devices([], 'GPU')
 
-def collate_fn_padd_1(batch):
-    '''
-    Padds batch of variable length
+logging.basicConfig(filename='decar.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logger=logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
-    note: it converts things ToTensor manually here since the ToTensor transform
-    assume it takes in images rather than arbitrary tensors.
-    '''
-    ## padd
-    batch = [torch.Tensor(t) for t in batch]
-    batch = torch.nn.utils.rnn.pad_sequence(batch,batch_first = True)
-    #batch = batch.reshape()
-    batch = batch.unsqueeze(1)
+def create_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    return batch
-
-
-def collate_fn_padd_2(batch):
-    '''
-    Padds batch of variable length
-
-    note: it converts things ToTensor manually here since the ToTensor transform
-    assume it takes in images rather than arbitrary tensors.
-    '''
-    ## padd
+def main(args):
     
-    batch_x = [torch.Tensor(t) for t,y in batch]
-    batch_y = [y for t,y in batch]
-    batch_x = torch.nn.utils.rnn.pad_sequence(batch_x,batch_first = True)
-    batch_x = batch_x.unsqueeze(1)
-    batch_y = torch.Tensor(batch_y).type(torch.LongTensor)
-
-    return batch_x,batch_y
-
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-class DeepCluster(Dataset):
-    def __init__(self, data_dir, data_dir_list):
-        self.datafolder = data_dir
-        self.audio_files_list = data_dir_list
-        
-    def __getitem__(self, idx):
-        audio_file = os.path.join(self.datafolder, self.audio_files_list[idx])
-        wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
-        log_mel_spec = extract_log_mel_spectrogram(wave)
-        log_mel_spec = log_mel_spec.numpy().tolist()       
-        return log_mel_spec
-
-    def __len__(self):
-        return len(self.audio_files_list)
-
-class DeepCluster_Reassigned(Dataset):
-    def __init__(self,data_dir, audio_file_list,label_list,audio_indexes):
-        self.data_directory = data_dir
-        self.audio_files = audio_file_list
-        self.audio_labels = label_list
-        self.audio_indexes = audio_indexes
-        self.dataset = self.make_dataset()
-        #print(self.dataset)
-        #print(self.audio_files_list)
-        
-    def make_dataset(self):
-        label_to_idx = {label: idx for idx, label in enumerate(set(self.audio_labels))}
-        audiopath_w_labels = []
-        for i, index in enumerate(self.audio_indexes):
-            path = self.audio_files[index]
-            pseudolabel = label_to_idx[self.audio_labels[index]] #could have been pseudolabels, bekar confusion change later
-            audiopath_w_labels.append((path,pseudolabel))
-            
-        return audiopath_w_labels
-            
-    def __getitem__(self, idx):
-        audio_file,label = self.dataset[idx]
-        audio_file= os.path.join(self.data_directory,audio_file)
-        wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
-        log_mel_spec = extract_log_mel_spectrogram(wave)
-        log_mel_spec = torch.tensor(log_mel_spec.numpy().tolist())
-        log_mel_spec = specaug(log_mel_spec.clone().detach().requires_grad_(True))        
-        return log_mel_spec,label
-
-    def __len__(self):
-        return len(self.audio_files)
-
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-class DeepCluster_ICASSP(nn.Module):
-    def __init__(self):
-        super(DeepCluster_ICASSP, self).__init__()
-        self.model_efficient = EfficientNet.from_name('efficientnet-b0',include_top = False, in_channels = 1,image_size = None)
-        #self.classifier = nn.Sequential(nn.Dropout(0.5),nn.Linear(1280, 512),nn.ReLU(),nn.Dropout(0.5),nn.Linear(512, 512),nn.ReLU())
-        self.classifier = nn.Sequential(nn.Dropout(0.5),nn.Linear(1280, 1280),nn.ReLU())
-        #self.top_layer = nn.Linear(512, 256)
-        self.top_layer = nn.Linear(1280, 256)
-    def forward(self,batch):
-        x = self.model_efficient(batch)
-        x = x.flatten(start_dim=1) #1280 (already swished)
-        x = self.classifier(x)
-        
-        if self.top_layer:
-            x = self.top_layer(x)
-        
-        return x
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-def main():
     torch.manual_seed(31)
     torch.cuda.manual_seed_all(31)
     np.random.seed(31)
+
+    list_of_files_directory = pd.read_csv(args.input)
+    list_of_files_directory = list(list_of_files_directory["files"])
 
     final_model = DeepCluster_ICASSP()
 
@@ -152,8 +46,8 @@ def main():
     final_model.top_layer = None
     final_model.model_efficient = torch.nn.DataParallel(final_model.model_efficient)
 
-    #final_model.features = torch.nn.DataParallel(final_model.features)
     final_model.cuda()
+    logger.info(final_model)
     cudnn.benchmark = True
 
 
@@ -164,44 +58,49 @@ def main():
         weight_decay=10**-5,
     )
 
-
     criterion = nn.CrossEntropyLoss().cuda()
 
+    start_epoch = 0
+
     #Resume from checkpoint
-    print("loading checkpoint")
-    checkpoint = torch.load("/speech/srayan/icassp/training/best_loss.pth.tar")
-    start_epoch = checkpoint['epoch']
-    # remove top_layer parameters from checkpoint
-    for key in checkpoint['state_dict'].copy():
-        if 'top_layer' in key:
-            del checkpoint['state_dict'][key]
-    final_model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
+    if args.resume:
+        logger.info("loading checkpoint")
+        checkpoint = torch.load(args.checkpoint_path)
+        start_epoch = checkpoint['epoch']
+        # remove top_layer parameters from checkpoint
+        for key in checkpoint['state_dict'].copy():
+            if 'top_layer' in key:
+                del checkpoint['state_dict'][key]
+        final_model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        logger.info("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
 
+    cluster_log = Logger(os.path.join(args.save_dir, 'clusters'))
 
+    pretrain_dataset = DeepCluster(list_of_files_directory)
 
-    pretrain_dataset = DeepCluster("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/",list_of_files_directory)
-
-    train_loader = torch.utils.data.DataLoader(pretrain_dataset, batch_size=16,collate_fn = collate_fn_padd_1,pin_memory=True,num_workers = 2)
+    train_loader = torch.utils.data.DataLoader(pretrain_dataset, batch_size=args.batch_size, collate_fn = collate_fn_padd_1, pin_memory=True, num_workers=args.num_workers)
 
     best_loss = float("inf")
 
-    #for epoch in range(0,200):
-    for epoch in range(start_epoch,200): #when using checkpoint
+    for epoch in range(start_epoch,args.epochs): #when using checkpoint
 
         final_model.top_layer = None
 
         final_model.classifier = nn.Sequential(*list(final_model.classifier.children())[:-1])
 
-        features = compute_features(train_loader, final_model, len(list_of_files_directory))
+        features = compute_features(args, train_loader, final_model, len(list_of_files_directory))
 
-        print("Entering Clustering")
+        logger.info("Entering Clustering")
 
-        deepcluster = Kmeans(256)
+        if args.cluster_algo == "kmeans":
+            deepcluster = Kmeans(args.num_clusters)
+        else:
+            deepcluster = Kmeans(args.num_clusters) #random value not used
+        
         clustering_loss = deepcluster.cluster(features, verbose=True)
 
-        print("Done Clustering")
+        logger.info("Done Clustering")
 
         mlp = list(final_model.classifier.children())
         mlp.append(nn.ReLU(inplace=True).cuda())
@@ -211,8 +110,7 @@ def main():
         final_model.top_layer.bias.data.zero_()
         final_model.top_layer.cuda()
 
-
-        print("Starting To make Reassigned Dataset")
+        logger.info("Starting To make Reassigned Dataset")
 
         pseudolabels = []
         image_indexes = []
@@ -222,33 +120,61 @@ def main():
 
         indexes_sorted = np.argsort(image_indexes)  
         pseudolabels = np.asarray(pseudolabels)[indexes_sorted]
-    
-        #label_to_idx = {label: idx for idx, label in enumerate(set(pseudolabels))}
 
-        dataset_w_labels = DeepCluster_Reassigned("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/",list_of_files_directory,pseudolabels,indexes_sorted)
+        #Count number of clusters having assignments
+        count = 0
+        for l in deepcluster.images_lists:
+            if len(l) > 0:
+                count += 1
+
+        logger.info("Number of clusters having assignments is = " + str(count))
+    
+        dataset_w_labels = DeepCluster_Reassigned(list_of_files_directory,pseudolabels,indexes_sorted)
 
         sampler = UnifLabelSampler(int(len(list_of_files_directory)),deepcluster.images_lists)
 
-        train_loader_reassigned = torch.utils.data.DataLoader(dataset_w_labels,batch_size=64,collate_fn = collate_fn_padd_2,sampler=sampler,pin_memory=True,num_workers = 2)
+        train_loader_reassigned = torch.utils.data.DataLoader(dataset_w_labels,batch_size=args.batch_size,collate_fn = collate_fn_padd_2,sampler=sampler,pin_memory=True,num_workers=args.num_workers)
 
-        print("Starting To Train")
+        logger.info("Starting To Train")
 
-        loss = train(train_loader_reassigned, final_model, criterion, optimizer, epoch)
+        loss = train(args, train_loader_reassigned, final_model, criterion, optimizer, epoch)
 
+        logger.info("Logging and saving checkpoints")
+
+        logger.info('###### Epoch [{0}] ###### \n'
+                  'Clustering loss: {1:.3f} \n'
+                  'ConvNet loss: {2:.3f}'
+                  .format(epoch, clustering_loss, loss))
+        try:
+            nmi = normalized_mutual_info_score(
+                    pseudolabels,
+                    rearrange_clusters(cluster_log.data[-1])
+                )
+            logger.info('NMI against previous assignment: {0:.3f}'.format(nmi))
+
+        except IndexError:
+            pass
+        logger.info('####################### \n')
+
+        #Save running checkpoint
         torch.save({'epoch': epoch + 1,
                     'state_dict': final_model.state_dict(),
                     'optimizer' : optimizer.state_dict()},
-                    os.path.join('/speech/srayan/icassp/training/checkpoints_deepcluster/', 'checkpoint_' + str(epoch + 1) + "_" + '.pth.tar'))
+                    os.path.join(args.save_dir, 'checkpoints_deepcluster', 'checkpoint_' + str(epoch + 1) + "_" + '.pth.tar'))
 
-        if loss < best_loss:
-            torch.save({'epoch': epoch + 1,
+        #Save best checkpoint
+        if epoch > 0:
+            if loss < best_loss:
+                torch.save({'epoch': epoch + 1,
                     'state_dict': final_model.state_dict(),
                     'optimizer' : optimizer.state_dict()},
-                    os.path.join('/speech/srayan/icassp/training/', 'best_loss.pth.tar'))
-            best_loss = loss
+                    os.path.join(args.save_dir, 'best_loss.pth.tar'))
+                best_loss = loss
+        
+        cluster_log.log(deepcluster.images_lists)
 
 
-def train(loader, model, crit, opt, epoch):
+def train(args, loader, model, crit, opt, epoch):
 
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -266,15 +192,14 @@ def train(loader, model, crit, opt, epoch):
 
     end = time.time()
     for i, (input_tensor, target) in enumerate(loader):
-        #print("One iteration done")
         data_time.update(time.time() - end)
 
         n = len(loader) * epoch + i
 
         if n % 5000 == 0:
-            print('Saving Checkpoint')
+            logger.info('Saving Checkpoint')
             path = os.path.join(
-                "/speech/srayan/icassp/training/",
+                args.save_dir,
                 'checkpoints',
                 'checkpoint_' + str(n / 5000) + '.pth.tar',
             )
@@ -307,19 +232,22 @@ def train(loader, model, crit, opt, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        print('Epoch: [{0}][{1}/{2}]\t'
+        logger.info('Epoch: [{0}][{1}/{2}]\t'
                   'Time: {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data: {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss: {loss.val:.4f} ({loss.avg:.4f})'
                   .format(epoch, i, len(loader), batch_time=batch_time,
                           data_time=data_time, loss=losses))
 
-    return loss
-
+    return losses.avg
 
 
 if __name__== "__main__":
-    main()
+    parser = get_upstream_parser()
+    args = parser.parse_args()
+    create_dir(os.path.join(args.save_dir,'checkpoints'))
+    create_dir(os.path.join(args.save_dir,'checkpoints_deepcluster'))
+    main(args)
 
 
 
