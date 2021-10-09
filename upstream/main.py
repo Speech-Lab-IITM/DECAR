@@ -96,7 +96,7 @@ def main(args):
         if args.cluster_algo == "kmeans":
             deepcluster = Kmeans(args.num_clusters)
         else:
-            deepcluster = Kmeans(args.num_clusters) #random value not used
+            deepcluster = PIC(args.num_clusters) #random value not used
         
         clustering_loss = deepcluster.cluster(features, verbose=True)
 
