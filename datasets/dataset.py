@@ -1,10 +1,12 @@
+from datasets.language_identification import LanguageIdentification
 from datasets.voxceleb import Voxceleb1Dataset
-from datasets.birdsong_dataset import BirdSongDataset
-from datasets.libri100 import Libri100
-from datasets.tut_urban_sounds import TutUrbanSounds
+from datasets.birdsong_dataset import BirdSongDataset ,BirdSongDatasetL2
+from datasets.libri100 import Libri100 ,Libri100L2
+from datasets.tut_urban_sounds import TutUrbanSounds ,TutUrbanSoundsL2
 from datasets.musical_instruments import MusicalInstrumentsDataset
-from datasets.iemocap import IEMOCAPDataset 
-from datasets.speech_commands_v1 import SpeechCommandsV1
+from datasets.iemocap import IEMOCAPDataset , IEMOCAPDatasetL2
+from datasets.speech_commands_v1 import SpeechCommandsV1 , SpeechCommandsV1L2
+from datasets.speech_commands_v2 import SpeechCommandsV2 , SpeechCommandsV2L2
 import torch
 
 def get_dataset(downstream_task_name):
@@ -13,23 +15,37 @@ def get_dataset(downstream_task_name):
     elif downstream_task_name == "birdsong_warblr":
         return split_dataset(BirdSongDataset(type="Warblr"))
     elif downstream_task_name == "birdsong_combined":
-        return split_dataset(BirdSongDataset(type="combined"))    
+        return split_dataset(BirdSongDataset(type="combined")) 
+    elif downstream_task_name == "birdsong_combined_l2":
+        return split_dataset(BirdSongDatasetL2(type="combined"))        
     elif downstream_task_name == "speech_commands_v1":
-        return SpeechCommandsV1() , None
+        return SpeechCommandsV1(type="train") , SpeechCommandsV1(type="test")
+    elif downstream_task_name == "speech_commands_v1_l2":
+        return SpeechCommandsV1L2(type="train") , SpeechCommandsV1L2(type="test")
     elif downstream_task_name == "speech_commands_v2":
-        raise NotImplementedError 
+        return SpeechCommandsV2(type="train") , SpeechCommandsV2(type="test") 
+    elif downstream_task_name == "speech_commands_v2_l2":
+        return SpeechCommandsV2L2(type="train") , SpeechCommandsV2L2(type="test")     
     elif downstream_task_name == "libri_100":
-        return Libri100(type="train") , Libri100(type="valid") 
+        return Libri100(type="train") , Libri100(type="test") 
+    elif downstream_task_name == "libri_100_l2":
+        return Libri100L2(type="train") , Libri100L2(type="test")     
     elif downstream_task_name == "musical_instruments":
         return MusicalInstrumentsDataset(type="train") , MusicalInstrumentsDataset(type="test")
     elif downstream_task_name == "iemocap":
         return IEMOCAPDataset(type='train'),IEMOCAPDataset(type='test')    
-    elif downstream_task_name == "tut_urban":
-        return TutUrbanSounds(type="train"),TutUrbanSounds(type="valid")
+    elif downstream_task_name == "iemocap_l2":
+        return IEMOCAPDatasetL2(type='train'),IEMOCAPDatasetL2(type='test')        
+    elif downstream_task_name == "tut_urban": 
+        return TutUrbanSounds(type="train"),TutUrbanSounds(type="test")
+    elif downstream_task_name == "tut_urban_l2":
+        return TutUrbanSoundsL2(type="train"),TutUrbanSoundsL2(type="test")    
     elif downstream_task_name == "voxceleb_v1":
         return Voxceleb1Dataset(type="train") , Voxceleb1Dataset(type="test")   
     elif downstream_task_name == "musan":
-        raise NotImplementedError                   
+        raise NotImplementedError      
+    elif downstream_task_name == "language_identification":
+        return LanguageIdentification(type="train"), LanguageIdentification(type="test")                 
     else:
         raise NotImplementedError
 

@@ -1,31 +1,17 @@
-import argparse
+import logging
 import os
-import pickle
 import time
-import numpy as np
-from utils import AverageMeter,UnifLabelSampler, create_dir, get_downstream_parser , load_pretrain
 
-from os.path import join as path_join
-import json
-from torch.utils.data import Dataset
-import torchaudio
-from torchaudio.transforms import Resample
+import matplotlib.pyplot as plt
 import torch
 from torch import nn
 
-import torch.utils.data as data
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-from datasets.dataset import get_dataset
 from datasets.data_utils import DataUtils
+from datasets.dataset import get_dataset
 from efficientnet.model import DeepCluster_downstream
-from utils import Metric 
-from utils import resume_from_checkpoint
-from utils import save_to_checkpoint
-import random
-import logging
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+from utils import (AverageMeter, Metric, create_dir, freeze_effnet,
+                   get_downstream_parser, load_pretrain,
+                   resume_from_checkpoint, save_to_checkpoint,move_to_gpu,set_seed)
 
 def get_logger(args):
     create_dir(args.exp_root)
@@ -47,27 +33,14 @@ def log_args(args):
     logger.info("BS {}".format(args.batch_size))  
     logger.info("complete args %r",args)         
 
-def set_seed(seed = 31):
-    random.seed(seed)
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-def move_to_gpu(*args):
-    if torch.cuda.is_available():
-        for item in args:
-            item.cuda()
-
 
 def train(args):    
     start_epoch=1
     args.exp_root = os.path.join('.','exp',args.down_stream_task,args.final_pooling_type,args.tag)
     logger = get_logger(args)
     log_args(args)
-    train_dataset,valid_dataset = get_dataset(args.down_stream_task)
+    train_dataset,test_dataset = get_dataset(args.down_stream_task)
 
-    # -----------model criterion optimizer ---------------- #
     model = DeepCluster_downstream(no_of_classes=train_dataset.no_of_classes,final_pooling_type=args.final_pooling_type)
     model.model_efficient = torch.nn.DataParallel(model.model_efficient)
     criterion = nn.CrossEntropyLoss()
@@ -84,6 +57,9 @@ def train(args):
         logger.info("Random Weights init")
         pass
 
+    if args.freeze_effnet:
+        freeze_effnet(model)
+
     move_to_gpu(model,criterion)
 
     train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -91,41 +67,34 @@ def train(args):
                                                 shuffle=True,
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)
-    valid_loader = torch.utils.data.DataLoader(valid_dataset,
+    test_loader = torch.utils.data.DataLoader(test_dataset,
                                                 batch_size=args.batch_size,
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)                                            
 
-    # train_stats = eval(train_loader, model, criterion)
-    # eval_stats = eval(valid_loader,model,criterion)
-    # logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
-    #         -1 , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
-    #             eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
-    #     ) )
     logger.info("Starting To Train")
     train_accuracy = []
     train_losses=[]
-    valid_accuracy = []
-    valid_losses=[]
+    test_accuracy = []
+    test_losses=[]
     for epoch in range(start_epoch,args.epochs+1):
         train_stats = train_one_epoch(train_loader, model, criterion, optimizer, epoch)
-        train_loss = train_stats["loss"]
         save_to_checkpoint(args.down_stream_task,args.exp_root,
                             epoch,model,optimizer)
-        eval_stats = eval(valid_loader,model,criterion)
+        eval_stats = eval(test_loader,model,criterion)
         train_losses.append(train_stats["loss"].avg.numpy())
         train_accuracy.append(train_stats["accuracy"].avg)
-        valid_losses.append(eval_stats["loss"].avg.numpy())
-        valid_accuracy.append(eval_stats["accuracy"].avg)
+        test_losses.append(eval_stats["loss"].avg.numpy())
+        test_accuracy.append(eval_stats["accuracy"].avg)
 
         logger.info("epoch :{} Train loss: {} Train accuracy: {} Valid loss: {} Valid accuracy: {}".format(
             epoch , train_stats["loss"].avg.numpy() ,train_stats["accuracy"].avg,
                 eval_stats["loss"].avg.numpy() , eval_stats["accuracy"].avg
         ) )
     logger.info("max train accuracy : {}".format(max(train_accuracy)))
-    logger.info("max valid accuracy : {}".format(max(valid_accuracy)))
+    logger.info("max valid accuracy : {}".format(max(test_accuracy)))
     plt.plot(range(1,len(train_accuracy)+1), train_accuracy, label = "train accuracy",marker = 'x')
-    plt.plot(range(1,len(valid_accuracy)+1), valid_accuracy, label = "valid accuracy",marker = 'x')
+    plt.plot(range(1,len(test_accuracy)+1), test_accuracy, label = "valid accuracy",marker = 'x')
     plt.legend()
     plt.savefig(os.path.join(args.exp_root,'accuracy.png'))
 
@@ -138,28 +107,11 @@ def train_one_epoch(loader, model, crit, opt, epoch):
     batch_time = AverageMeter()
     losses = AverageMeter()
     data_time = AverageMeter()
-    forward_time = AverageMeter()
-    backward_time = AverageMeter()
 
     model.train()
     end = time.time()
     for i, (input_tensor, target) in enumerate(loader):
         data_time.update(time.time() - end)
-
-        # n = len(loader) * epoch + i
-        # if n % 5000 == 0:
-        #     print('Saving Checkpoint')
-        #     # path = os.path.join(
-        #     #     "/speech/srayan/icassp/training/",
-        #     #     'checkpoints',
-        #     #     'checkpoint_' + str(n / 5000) + '.pth.tar',
-        #     # )
-
-        #     # torch.save({
-        #     #     'epoch': epoch + 1,
-        #     #     'state_dict': model.state_dict(),
-        #     #     'optimizer' : opt.state_dict()
-        #     # }, path)
 
         if torch.cuda.is_available():
             input_var = torch.autograd.Variable(input_tensor.cuda())
@@ -172,10 +124,7 @@ def train_one_epoch(loader, model, crit, opt, epoch):
         output = model(input_var)
         loss = crit(output, target_var)
         
-        # record loss
         losses.update(loss.data, input_tensor.size(0))
-
-        # compute gradient and do SGD step
         opt.zero_grad()
         loss.backward()
         opt.step()
@@ -190,9 +139,6 @@ def train_one_epoch(loader, model, crit, opt, epoch):
                   .format(epoch, i, len(loader), batch_time=batch_time,
                           data_time=data_time, loss=losses))
     
-    
-    #--------------epoch evaultion-----------------# 
-
     eval_metrics =eval(loader,model,crit)
     logger.debug("epoch-"+str(epoch) +" ended")
     return eval_metrics
