@@ -25,8 +25,8 @@ from augmentations import MixupBYOLA, RandomResizeCrop, RunningNorm
 from models_delores import AudioNTT2020
 from dino_loss import DINOLoss
 
-list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
-list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
+#list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
+#list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
 
 AUDIO_SR = 16000
 
@@ -69,8 +69,8 @@ def main(gpu, args):
         backend='nccl', init_method=args.dist_url,
         world_size=args.world_size, rank=args.rank)
 
-    #list_of_files_directory = pd.read_csv(args.input)
-    #list_of_files_directory = list(list_of_files_directory["files"])
+    list_of_files_directory = pd.read_csv(args.input)
+    list_of_files_directory = list(list_of_files_directory["files"])
 
 
 
@@ -181,13 +181,15 @@ def main(gpu, args):
             }
             torch.save(
                 save_dict,
-                os.path.join(args.dump_path, "checkpoint.pth.tar"),
+                os.path.join(args.save_dir, 'checkpoints_deepcluster', 'checkpoint_' + str(epoch + 1) + "_" + '.pth.tar'),
             )
+            '''
             if epoch % args.checkpoint_freq == 0 or epoch == args.epochs - 1:
                 shutil.copyfile(
                     os.path.join(args.dump_path, "checkpoint.pth.tar"),
                     os.path.join(args.dump_checkpoints, "ckp-" + str(epoch) + ".pth"),
                 )
+            '''    
         torch.save({"local_memory_embeddings": local_memory_embeddings,
                     "local_memory_index": local_memory_index}, mb_path)
 
@@ -200,11 +202,13 @@ def train(args, loader, model, optimizer, epoch, schedule, local_memory_index, l
     data_time = AverageMeter()
     forward_time = AverageMeter()
     backward_time = AverageMeter()
-
+    print('model training started')
     model.train()
+    print('model training completed')
     cross_entropy = nn.CrossEntropyLoss(ignore_index=-100)
 
-    assignments = cluster_memory(model, local_memory_index, local_memory_embeddings, len(loader.dataset))
+    assignments = cluster_memory(args,model, local_memory_index, local_memory_embeddings, len(loader.dataset))
+    print('Clustering for epoch {} done.'.format(epoch))
     logger.info('Clustering for epoch {} done.'.format(epoch))
 
     end = time.time() 
@@ -249,6 +253,18 @@ def train(args, loader, model, optimizer, epoch, schedule, local_memory_index, l
         losses.update(loss.item(), inputs[0].size(0))
         batch_time.update(time.time() - end)
         end = time.time()
+        print("Epoch: [{0}][{1}]\t"
+                "Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t"
+                "Data {data_time.val:.3f} ({data_time.avg:.3f})\t"
+                "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
+                "Lr: {lr:.4f}".format(
+                    epoch,
+                    it,
+                    batch_time=batch_time,
+                    data_time=data_time,
+                    loss=losses,
+                    lr=optimizer.optim.param_groups[0]["lr"]
+                ))
         if args.rank ==0 and it % 50 == 0:
             logger.info(
                 "Epoch: [{0}][{1}]\t"

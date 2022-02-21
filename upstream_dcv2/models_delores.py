@@ -5,6 +5,7 @@ from pathlib import Path
 import torch
 from torch import nn
 import torch.nn.functional as F
+from utils import MultiPrototypes
 
 
 class NetworkCommonMixIn():
@@ -91,7 +92,11 @@ class AudioNTT2020(AudioNTT2020Task6):
                 nn.ReLU(inplace=True),
                 nn.Linear(2048, out_dim),
             )
-        self.prototypes = nn.Linear(out_dim, nmb_prototypes[0], bias=False)
+        #self.prototypes = nn.Linear(out_dim, nmb_prototypes[0], bias=False)
+        if isinstance(args.nmb_prototypes, list):
+            self.prototypes = MultiPrototypes(out_dim, args.nmb_prototypes)
+        elif args.nmb_prototypes > 0:
+            self.prototypes = nn.Linear(out_dim, args.nmb_prototypes, bias=False)
 
     def forward(self, batch):
 
@@ -105,5 +110,4 @@ class AudioNTT2020(AudioNTT2020Task6):
 
         if len(self.args.crops_for_assign) == 1:
             x = x
-
         return x, self.prototypes(x)
