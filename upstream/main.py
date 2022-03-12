@@ -17,36 +17,73 @@ from utils import extract_log_mel_spectrogram, compute_features, get_upstream_pa
 from clustering import run_kmeans, Kmeans, PIC, rearrange_clusters
 from specaugment import specaug
 from datasets import collate_fn_padd_1, collate_fn_padd_2, DeepCluster, DeepCluster_Reassigned
-from models import DeepCluster_ICASSP
-
+from models import AudioNTT2020
+from specaugment import specaug
+from augmentations import MixupBYOLA, RandomResizeCrop, RunningNorm
+from models import AudioNTT2020
+import pandas as pd
 
 AUDIO_SR = 16000
-tf.config.set_visible_devices([], 'GPU')
+
 
 logging.basicConfig(filename='decar.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 logger=logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+class AugmentationModule:
+    """BYOL-A augmentation module example, the same parameter with the paper."""
+
+    def __init__(self, args, size, epoch_samples, log_mixup_exp=True, mixup_ratio=0.4):
+        self.train_transform = nn.Sequential(
+            MixupBYOLA(ratio=mixup_ratio, log_mixup_exp=log_mixup_exp),
+            RandomResizeCrop(virtual_crop_scale=(1.0, 1.5), freq_scale=(0.6, 1.5), time_scale=(0.6, 1.5)),
+        )
+        self.pre_norm = RunningNorm(epoch_samples=epoch_samples)
+        print('Augmentations:', self.train_transform)
+        self.norm_status = args.use_norm
+    def __call__(self, x):
+        if self.norm_status == "byol":
+            x = self.pre_norm(x)
+        return self.train_transform(x)
+
+
 def create_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def main(args):
+def main(gpu, args):
+    
+    args.rank += gpu
     
     torch.manual_seed(31)
     torch.cuda.manual_seed_all(31)
+    torch.cuda.set_device(gpu)
+    torch.backends.cudnn.benchmark = True
+
     np.random.seed(31)
 
-    list_of_files_directory = pd.read_csv(args.input)
+    torch.distributed.init_process_group(
+        backend='nccl', init_method=args.dist_url,
+        world_size=args.world_size, rank=args.rank)
+
+    list_of_files_directory = pd.read_csv('/speech/ashish/small.csv')
     list_of_files_directory = list(list_of_files_directory["files"])
 
-    final_model = DeepCluster_ICASSP()
-
+    #final_model = DeepCluster_ICASSP()
+    #final_model.model_efficient = torch.nn.DataParallel(final_model.model_efficient)
+    print('model defination')
+    final_model = AudioNTT2020(args, args.feat_dim, n_mels=64, d=2048).cuda(gpu)
+    print(final_model.classifier)
     fd = int(final_model.top_layer.weight.size()[1])
     final_model.top_layer = None
-    final_model.model_efficient = torch.nn.DataParallel(final_model.model_efficient)
+    final_model = nn.SyncBatchNorm.convert_sync_batchnorm(final_model)
 
-    final_model.cuda()
+    final_model = nn.parallel.DistributedDataParallel(final_model, device_ids=[gpu],find_unused_parameters=True)
+    print('initilization of the model completed')
+    print(final_model)
+    
+    
+    #final_model.cuda()
     logger.info(final_model)
     cudnn.benchmark = True
 
@@ -77,17 +114,18 @@ def main(args):
 
     cluster_log = Logger(os.path.join(args.save_dir, 'clusters'))
 
-    pretrain_dataset = DeepCluster(list_of_files_directory)
+    pretrain_dataset = DeepCluster(list_of_files_directory,len(list_of_files_directory),args)  #without augmentation 
 
-    train_loader = torch.utils.data.DataLoader(pretrain_dataset, batch_size=args.batch_size, collate_fn = collate_fn_padd_1, pin_memory=True, num_workers=args.num_workers)
+    train_loader = torch.utils.data.DataLoader(pretrain_dataset, batch_size=args.batch_size)
 
     best_loss = float("inf")
+    tfms = AugmentationModule(args, (64, 96), 2 * len(list_of_files_directory))
 
     for epoch in range(start_epoch,args.epochs): #when using checkpoint
 
-        final_model.top_layer = None
-
-        final_model.classifier = nn.Sequential(*list(final_model.classifier.children())[:-1])
+        final_model.module.top_layer = None
+        #during clustering we do not do ReLU
+        final_model.module.classifier = nn.Sequential(*list(final_model.module.classifier.children())[:-1])
 
         features = compute_features(args, train_loader, final_model, len(list_of_files_directory))
 
@@ -102,13 +140,13 @@ def main(args):
 
         logger.info("Done Clustering")
 
-        mlp = list(final_model.classifier.children())
+        mlp = list(final_model.module.classifier.children())
         mlp.append(nn.ReLU(inplace=True).cuda())
-        final_model.classifier = nn.Sequential(*mlp)
-        final_model.top_layer = nn.Linear(fd, len(deepcluster.images_lists))
-        final_model.top_layer.weight.data.normal_(0, 0.01)
-        final_model.top_layer.bias.data.zero_()
-        final_model.top_layer.cuda()
+        final_model.module.classifier = nn.Sequential(*mlp)
+        final_model.module.top_layer = nn.Linear(fd, len(deepcluster.images_lists))
+        final_model.module.top_layer.weight.data.normal_(0, 0.01)
+        final_model.module.top_layer.bias.data.zero_()
+        final_model.module.top_layer.cuda()
 
         logger.info("Starting To make Reassigned Dataset")
 
@@ -129,7 +167,7 @@ def main(args):
 
         logger.info("Number of clusters having assignments is = " + str(count))
     
-        dataset_w_labels = DeepCluster_Reassigned(list_of_files_directory,pseudolabels,indexes_sorted)
+        dataset_w_labels = DeepCluster_Reassigned(args,list_of_files_directory,pseudolabels,indexes_sorted,tfms)
 
         sampler = UnifLabelSampler(int(len(list_of_files_directory)),deepcluster.images_lists)
 
@@ -185,7 +223,7 @@ def train(args, loader, model, crit, opt, epoch):
     model.train()
 
     optimizer_tl = torch.optim.SGD(
-        model.top_layer.parameters(),
+        model.module.top_layer.parameters(),
         lr=0.05,
         weight_decay=10**-5,
     )
@@ -238,6 +276,12 @@ def train(args, loader, model, crit, opt, epoch):
                   'Loss: {loss.val:.4f} ({loss.avg:.4f})'
                   .format(epoch, i, len(loader), batch_time=batch_time,
                           data_time=data_time, loss=losses))
+        print('Epoch: [{0}][{1}/{2}]\t'
+                  'Time: {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data: {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss: {loss.val:.4f} ({loss.avg:.4f})'
+                  .format(epoch, i, len(loader), batch_time=batch_time,
+                          data_time=data_time, loss=losses))                  
 
     return losses.avg
 
@@ -245,9 +289,15 @@ def train(args, loader, model, crit, opt, epoch):
 if __name__== "__main__":
     parser = get_upstream_parser()
     args = parser.parse_args()
+
     create_dir(os.path.join(args.save_dir,'checkpoints'))
     create_dir(os.path.join(args.save_dir,'checkpoints_deepcluster'))
-    main(args)
+
+    args.rank = 0
+    args.dist_url = 'tcp://localhost:58472'
+    args.world_size = 1
+
+    torch.multiprocessing.spawn(main, (args,), 1)
 
 
 
