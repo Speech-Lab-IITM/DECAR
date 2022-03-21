@@ -19,7 +19,7 @@ import shutil
 
 from utils import extract_log_mel_spectrogram, compute_features, get_upstream_parser, AverageMeter, UnifLabelSampler, Logger, init_memory, cluster_memory
 from specaugment import specaug
-from datasets import collate_fn_padd, BARLOW
+from datasets_gen import collate_fn_padd, BARLOW
 from multi_proc import LARS, cosine_scheduler
 from augmentations import MixupBYOLA, RandomResizeCrop, RunningNorm
 from models_delores import AudioNTT2020
@@ -107,7 +107,7 @@ def main(gpu, args):
         train_dataset, batch_size=per_device_batch_size, num_workers=args.num_workers,
         pin_memory=True, sampler=sampler)
 
-
+    print('loader',len(loader))
     optimizer = LARC(optimizer=optimizer, trust_coefficient=0.001, clip=False)
     
     logger.info("Building optimizer and dataloader done.")
@@ -132,8 +132,9 @@ def main(gpu, args):
         local_memory_index = mb_ckp["local_memory_index"]
         local_memory_embeddings = mb_ckp["local_memory_embeddings"]
     else:
+        print('In else')
         local_memory_index, local_memory_embeddings = init_memory(args, loader, model, logger)
-
+        print('shape of lmi',local_memory_index.shape)
 
     start_epoch = 0
 
@@ -218,9 +219,9 @@ def train(args, loader, model, optimizer, epoch, schedule, local_memory_index, l
 
         it = len(loader) * epoch + i
 
-
-        # ============ multi-res forward passes ... ============
-        emb, output = model(inputs)
+        print('iter {0} and shape {1}'.format(i,inputs[0].shape))
+        # ============ multi-res forward passes ... ============    
+        emb, output = model(inputs[0])
         emb = emb.detach()
         bs = inputs[0].size(0)
 
@@ -243,6 +244,7 @@ def train(args, loader, model, optimizer, epoch, schedule, local_memory_index, l
         optimizer.step()
 
         # ============ update memory banks ... ============
+        
         local_memory_index[start_idx : start_idx + bs] = idx
         for i, crop_idx in enumerate(args.crops_for_assign):
             local_memory_embeddings[i][start_idx : start_idx + bs] = \
@@ -281,15 +283,16 @@ def train(args, loader, model, optimizer, epoch, schedule, local_memory_index, l
                 )
             )
 
-        if it % args.print_freq == 0:
+        
+        if it % 50 == 0:
             if args.rank == 0:
                 stats = dict(epoch=epoch, step=it,
                                  lr_weights=optimizer.param_groups[0]['lr'],
-                                 lr_biases=optimizer.param_groups[1]['lr'],
                                  loss=loss.item(),
                                  time=int(time.time() - end))
                 print(json.dumps(stats))
                 print(json.dumps(stats), file=stats_file)
+
     return (epoch, losses.avg), local_memory_index, local_memory_embeddings
 
 
@@ -303,10 +306,10 @@ if __name__== "__main__":
     create_dir(os.path.join(args.save_dir,'checkpoints_deepcluster'))
 
     args.rank = 0
-    args.dist_url = 'tcp://localhost:58472'
-    args.world_size = 2
+    args.dist_url = 'tcp://localhost:58473'
+    args.world_size = 1
 
-    torch.multiprocessing.spawn(main, (args,), 2)
+    torch.multiprocessing.spawn(main, (args,), 1)
 
     #main(args)
 

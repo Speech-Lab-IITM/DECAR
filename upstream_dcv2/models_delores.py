@@ -107,7 +107,7 @@ class AudioNTT2020(AudioNTT2020Task6):
         z = z1 + z2
 
         x = self.projection_head(z)
-
+        x=nn.functional.normalize(x, dim=1, p=2)
         if len(self.args.crops_for_assign) == 1:
             x = x
         return x, self.prototypes(x)

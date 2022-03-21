@@ -5,6 +5,7 @@ import tensorflow as tf
 from torch.utils.data import Dataset
 import librosa
 import torch.nn.functional as f
+import random
 
 from utils import extract_log_mel_spectrogram, extract_window, extract_log_mel_spectrogram_torch, extract_window_torch, MelSpectrogramLibrosa
 
@@ -45,17 +46,10 @@ class BARLOW(Dataset):
 
     def __getitem__(self, idx):
         audio_file = self.audio_files_list[idx]
-        wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
-        wave = torch.tensor(wave)
-        
-        waveform = extract_window_torch(self.length, wave) #extract a window
-
-        if self.norm_status == "l2":
-            waveform = f.normalize(waveform,dim=-1,p=2) #l2 normalize
-
-        log_mel_spec = extract_log_mel_spectrogram_torch(waveform, self.to_mel_spec) #convert to logmelspec
-        log_mel_spec = log_mel_spec.unsqueeze(0)
-
+        log_mel_spec = np.load(audio_file)
+        log_mel_spec = torch.from_numpy(log_mel_spec)
+        t = random.randint(0,log_mel_spec.shape[2]-97)
+        log_mel_spec = log_mel_spec[:,:,t:t+97]
         if self.tfms:
             lms = self.tfms(log_mel_spec) #do augmentations
 

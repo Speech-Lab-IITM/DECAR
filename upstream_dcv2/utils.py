@@ -396,17 +396,17 @@ def get_upstream_parser():
     #                     help='Number of units in prediction head')
     parser.add_argument('--length_wave', type=float, default=0.98, 
                         help='Length of wave split')
-    parser.add_argument('--out_dim', type=int, default=128,
+    parser.add_argument('--out_dim', type=int, default=512,
                         help='Length of output dimension')
     parser.add_argument('--base_lr', type=float, default=4.8,
                         help='learning rate')
     parser.add_argument('--final_lr', type=float, default=0,
                         help='learning rate')
-    parser.add_argument('--feat_dim', type=float, default=128,
+    parser.add_argument('--feat_dim', type=float, default=512,
                         help='last layer feature dimension for SSL')
     parser.add_argument('--dump_path', type=str, default="./",
                         help='path to dump meory bank')
-    parser.add_argument('--nmb_prototypes', type=int, default=[3000],
+    parser.add_argument('--nmb_prototypes', type=int, default=[1024],
                         help='number of prototypes')
     parser.add_argument("--nmb_crops", type=int, default=[1], nargs="+",
                     help="list of number of crops (example: [2, 6])")
@@ -414,5 +414,7 @@ def get_upstream_parser():
                     help="freeze the prototypes during this many iterations from the start")
     parser.add_argument("--crops_for_assign", type=int, nargs="+", default=[0],
                     help="list of crops id used for computing assignments")
+    parser.add_argument("--temperature", default=0.1, type=float,
+                    help="temperature parameter in training loss")
   
     return parser
